@@ -127,7 +127,6 @@ export default function DaftarMitra(): JSX.Element {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<RoleType>("petani");
   const [formData, setFormData] = useState<FormDataState>(INITIAL_FORM_STATE);
-  const [submitted, setSubmitted] = useState<boolean>(false);
   const [passwordMismatch, setPasswordMismatch] = useState<boolean>(false);
 
   const handleInputChange = (
@@ -162,7 +161,6 @@ export default function DaftarMitra(): JSX.Element {
       window.localStorage.setItem(ROLE_STORAGE_KEY, selectedRole);
     }
 
-    setSubmitted(true);
     router.push(`/profil/${selectedRole}`);
   };
 
@@ -199,45 +197,7 @@ export default function DaftarMitra(): JSX.Element {
           </p>
         </header>
 
-        {submitted ? (
-          <div className="mx-auto max-w-xl rounded-2xl border border-[#166534] bg-white p-8 text-center shadow-md">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#166534]/15 text-[#166534]">
-              <ShieldCheckIcon className="h-8 w-8" />
-            </div>
-            <h2 className="mt-4 text-xl font-bold text-[#273419]">Pendaftaran Berhasil Dikirim!</h2>
-            <p className="mt-2 text-sm leading-relaxed text-gray-700">
-              Terima kasih, <strong>{formData.namaLengkap}</strong>. Akun kemitraan Anda sebagai{" "}
-              <strong>{selectedRoleMeta.title}</strong> sedang ditinjau oleh Admin SAMANGGA. Kami akan mengonfirmasi
-              aktivasi akun melalui WhatsApp di nomor <strong>{formData.nomorWhatsapp}</strong>.
-            </p>
-
-            <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
-              <Link
-                href={`/profil/${selectedRole}`}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#3D5126] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#273419]"
-              >
-                Buka Profil & Workspace {selectedRoleMeta.shortTitle} ➔
-              </Link>
-              <Link
-                href="/katalog"
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#3D5126] bg-white px-5 text-sm font-semibold text-[#273419] transition-colors hover:bg-[#95A87A]/20"
-              >
-                Jelajahi Katalog
-              </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  setSubmitted(false);
-                  setFormData(INITIAL_FORM_STATE);
-                }}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-gray-300 bg-white px-5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-              >
-                Daftar Akun Lain
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
             <section aria-labelledby="role-selection-title" className="lg:col-span-5">
               <div className="sticky top-20">
                 <div className="flex items-center justify-between">
@@ -720,7 +680,6 @@ export default function DaftarMitra(): JSX.Element {
               </div>
             </section>
           </div>
-        )}
       </main>
 
       <SiteFooter />
