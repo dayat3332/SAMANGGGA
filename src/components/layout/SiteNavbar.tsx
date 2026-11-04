@@ -7,11 +7,13 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { JSX } from "react";
 import {
   ArrowRightIcon,
+  BasketIcon,
   HouseIcon,
   MenuIcon,
   UserGearIcon,
 } from "@/components/ui/Icons";
 import { DEFAULT_PROFILES, ROLE_STORAGE_KEY, type RoleSlug } from "@/data/profil";
+import { getCartItems, subscribeCart } from "@/lib/cart";
 
 interface NavItem {
   label: string;
@@ -54,6 +56,14 @@ function getServerAuthSnapshot(): RoleSlug | null {
   return null;
 }
 
+function getCartCountSnapshot(): number {
+  return getCartItems().reduce((acc, it) => acc + it.quantity, 0);
+}
+
+function getServerCartCountSnapshot(): number {
+  return 0;
+}
+
 const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126] focus-visible:ring-offset-2 focus-visible:ring-offset-white";
 
@@ -79,6 +89,11 @@ export function Navbar(): JSX.Element {
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   const userRole = useSyncExternalStore(subscribeAuth, getAuthSnapshot, getServerAuthSnapshot);
+  const cartItemCount = useSyncExternalStore(
+    subscribeCart,
+    getCartCountSnapshot,
+    getServerCartCountSnapshot,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -148,6 +163,20 @@ export function Navbar(): JSX.Element {
 
         {/* Kanan */}
         <div className="flex items-center gap-2">
+          {/* Tombol Keranjang Belanja */}
+          <Link
+            href="/keranjang"
+            aria-label={`Keranjang belanja, ${cartItemCount} item`}
+            className="relative inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-[#273419] shadow-xs hover:border-[#3D5126] hover:bg-[#95A87A]/15 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126]"
+          >
+            <BasketIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+            {cartItemCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full bg-[#FFB81C] text-[10px] sm:text-xs font-black text-[#273419] shadow-xs ring-2 ring-white">
+                {cartItemCount}
+              </span>
+            )}
+          </Link>
+
           {currentProfile ? (
             /* Sudah Login: Tampilkan Avatar Profil dengan Dropdown Menu */
             <div className="relative" ref={profileDropdownRef}>

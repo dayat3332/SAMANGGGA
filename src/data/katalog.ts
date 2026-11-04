@@ -2,6 +2,11 @@ import type { MetodePembayaran } from "@/types/samangga";
 
 export type ProductCategory = "Mangga Segar" | "Olahan Mangga" | "Bibit Pohon";
 
+export interface ProductSpecItem {
+  label: string;
+  value: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -19,6 +24,8 @@ export interface Product {
   description: string;
   /** Lokasi aset gambar produk */
   image?: string;
+  /** Spesifikasi lengkap produk mangga */
+  spesifikasi?: readonly ProductSpecItem[];
 }
 
 export const CATEGORIES: readonly ProductCategory[] = [
@@ -43,6 +50,16 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Kulit merah-jingga, aroma kuat, dipetik pada tingkat kematangan 80%. Cocok untuk ritel premium.",
     image: "/images/mangga/mangga_gincu.jpg",
+    spesifikasi: [
+      { label: "Varietas", value: "Gedong Gincu Asli Indramayu" },
+      { label: "Grade Kualitas", value: "Super Ekspor (Grade A+)" },
+      { label: "Tingkat Kemanisan", value: "15 – 18° Brix (Manis Pekat Alami)" },
+      { label: "Tingkat Kematangan", value: "80% – 85% Matang Pohon (Siap Kirim)" },
+      { label: "Bobot per Buah", value: "300 – 400 gram (3–4 buah/kg)" },
+      { label: "Karakter Daging", value: "Daging tebal oranye kemerahan, serat sangat halus" },
+      { label: "Standar Budidaya", value: "Good Agricultural Practices (GAP) Indramayu" },
+      { label: "Masa Simpan", value: "5–7 hari (suhu ruang), 14 hari (cold storage 12°C)" },
+    ],
   },
   {
     id: "ms-02",
@@ -58,6 +75,15 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Daging tebal, manis, sedikit serat. Sudah disortir ukuran 3–4 buah per kg.",
     image: "/images/mangga/mangga_harusmanis.jpg",
+    spesifikasi: [
+      { label: "Varietas", value: "Arumanis 143 Indramayu" },
+      { label: "Grade Kualitas", value: "Super Pilihan Pasar Induk & Modern" },
+      { label: "Tingkat Kemanisan", value: "14 – 16° Brix" },
+      { label: "Tingkat Kematangan", value: "85% Siap Konsumsi / Matang Pohon" },
+      { label: "Bobot per Buah", value: "350 – 500 gram / buah" },
+      { label: "Karakter Daging", value: "Aroma harum khas, daging lembut juicy tanpa serat kasar" },
+      { label: "Masa Simpan", value: "5–6 hari di suhu ruang berventilasi" },
+    ],
   },
   {
     id: "ms-03",
@@ -73,6 +99,14 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Buah lonjong besar, manis segar. Panen bertahap, siap kirim mingguan.",
     image: "/images/mangga/mangga_golek.jpg",
+    spesifikasi: [
+      { label: "Varietas", value: "Mangga Golek Lokal Pantura" },
+      { label: "Grade Kualitas", value: "Grade A Jumbo" },
+      { label: "Tingkat Kemanisan", value: "13 – 15° Brix (Segar Manis)" },
+      { label: "Bobot per Buah", value: "500 – 750 gram / buah (Ukuran Besar)" },
+      { label: "Bentuk & Tekstur", value: "Lonjong panjang, daging padat pulen" },
+      { label: "Kondisi Panen", value: "Petik tua matang pohon alami" },
+    ],
   },
   {
     id: "ms-04",
@@ -88,6 +122,13 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Rasa manis legit dengan tekstur lembut. Bisa dibeli dalam jumlah kecil.",
     image: "/images/mangga/mangga_manalagi.jpg",
+    spesifikasi: [
+      { label: "Varietas", value: "Manalagi Segar" },
+      { label: "Grade Kualitas", value: "Grade Pilihan Ritel" },
+      { label: "Tingkat Kemanisan", value: "14 – 16° Brix (Manis Legit Walau Mengkal)" },
+      { label: "Bobot per Buah", value: "250 – 350 gram / buah" },
+      { label: "Kemasan", value: "Karton jinjing berpelindung net buah" },
+    ],
   },
   {
     id: "ms-05",
@@ -103,6 +144,12 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Buah kecil atau sedikit cacat kulit, rasa tetap baik. Ideal untuk jus, pulp, dan dodol.",
     image: "/images/mangga/mangga_afkir.jpg",
+    spesifikasi: [
+      { label: "Kategori", value: "Bahan Baku Industri Olahan UMKM" },
+      { label: "Grade Kualitas", value: "Grade C (Cacat Fisik Kulit Ringan, Daging Prima)" },
+      { label: "Kandungan Daging", value: "Tingkat kematangan optimal untuk fermentasi/ekstraksi" },
+      { label: "Rekomendasi Olah", value: "Sari buah, pulp frozen, dodol mangga, cuka buah" },
+    ],
   },
 
   // Olahan Mangga
@@ -120,6 +167,12 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Dodol legit dari mangga gedong asli tanpa pewarna. Tahan hingga 3 bulan.",
     image: "/images/olahan/dodol_mangga.jpg",
+    spesifikasi: [
+      { label: "Komposisi", value: "Mangga Gedong Gincu Asli, Gula Kelapa, Tepung Ketan" },
+      { label: "Berat Bersih", value: "250 gram / kemasan box higienis" },
+      { label: "Masa Kedaluwarsa", value: "3 Bulan di suhu ruang (Tanpa Pengawet Sintetis)" },
+      { label: "Legalitas", value: "P-IRT & Sertifikasi Halal Kemenag" },
+    ],
   },
   {
     id: "om-02",
@@ -135,6 +188,12 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Keripik vacuum frying, renyah dan manis alami. Cocok untuk oleh-oleh.",
     image: "/images/olahan/keripik_mangga.jpg",
+    spesifikasi: [
+      { label: "Teknologi Olah", value: "Vacuum Frying suhu rendah (nutrisi buah terjaga)" },
+      { label: "Bahan", value: "100% Buah Mangga Indramayu & Minyak Nabati Kelapa" },
+      { label: "Berat Bersih", value: "100 gram (Aluminium Foil Seal Kedap Udara)" },
+      { label: "Masa Kedaluwarsa", value: "8 Bulan" },
+    ],
   },
   {
     id: "om-03",
@@ -150,6 +209,11 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Bubur mangga murni untuk bahan jus, es krim, dan kue. Dikirim beku.",
     image: "/images/olahan/pulp_mangga.jpg",
+    spesifikasi: [
+      { label: "Bahan Baku", value: "100% Daging Mangga Gedong & Harum Manis Murni" },
+      { label: "Kondisi Pengiriman", value: "Frozen (-18°C) dalam vacuum pouch 1 kg" },
+      { label: "Aplikasi Industri", value: "Horeka, Es Krim Artisan, Bakery, Jus Kafe" },
+    ],
   },
   {
     id: "om-04",
@@ -165,6 +229,11 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Sirup kental dari sari mangga gedong. Satu botol untuk sekitar 20 gelas.",
     image: "/images/olahan/sirup_mangga.jpg",
+    spesifikasi: [
+      { label: "Isi Bersih", value: "600 ml botol kaca segel" },
+      { label: "Konsentrasi", value: "Ekstrak Buah Mangga Asli Indramayu + Gula Tebu Alami" },
+      { label: "Rasio Larutan", value: "1 bagian sirup : 4 bagian air dingin/soda" },
+    ],
   },
   {
     id: "om-05",
@@ -180,6 +249,12 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Kompos matang dari limbah kulit mangga. Menyuburkan tanah kebun dan sawah.",
     image: "/images/limbah/pupuk_kompos.jpg",
+    spesifikasi: [
+      { label: "Jenis Produk", value: "Kompos Organik Fermentasi Sirkular" },
+      { label: "Bahan Utama", value: "Kulit & Serat Mangga Limbah Pengolahan + Bio-Aktivator" },
+      { label: "Kemasan", value: "Karung 25 kg berpori" },
+      { label: "Kandungan Unsur", value: "Kaya Kalium, Fosfor Organik, dan Bahan Humat" },
+    ],
   },
 
   // Bibit Pohon
@@ -197,6 +272,12 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Bibit okulasi sehat, siap tanam. Mulai berbuah sekitar 2–3 tahun.",
     image: "/images/bibit/bibit_gedonggincu.jpg",
+    spesifikasi: [
+      { label: "Metode Perbanyakan", value: "Okulasi Mata Tempel Induk Bersertifikat" },
+      { label: "Tinggi Bibit", value: "70 – 90 cm dalam polybag" },
+      { label: "Masa Awal Berbuah", value: "2 – 3 tahun setelah tanam" },
+      { label: "Ketahanan Hama", value: "Batang bawah tahan cekaman tanah pesisir" },
+    ],
   },
   {
     id: "bp-02",
@@ -212,6 +293,11 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Bibit dalam polybag dengan akar kuat. Cocok untuk lahan pekarangan maupun kebun.",
     image: "/images/bibit/bibit_arummanis.jpg",
+    spesifikasi: [
+      { label: "Metode Perbanyakan", value: "Okulasi Batang Unggul" },
+      { label: "Tinggi Bibit", value: "60 – 75 cm" },
+      { label: "Media Tanam", value: "Tanah humus + kompos organik matang" },
+    ],
   },
   {
     id: "bp-03",
@@ -227,6 +313,11 @@ export const PRODUCTS: readonly Product[] = [
     description:
       "Bibit cangkok dari pohon induk unggul. Pertumbuhan cepat dan sifat sama dengan induk.",
     image: "/images/bibit/bibit_golek.jpg",
+    spesifikasi: [
+      { label: "Metode Perbanyakan", value: "Cangkok Akar Serabut Lebat" },
+      { label: "Tinggi Bibit", value: "50 – 65 cm" },
+      { label: "Karakteristik", value: "Cepat berbuah, tajuk rimbun ideal untuk lahan sempit" },
+    ],
   },
 ];
 
@@ -297,3 +388,17 @@ export const PAYMENT_OPTIONS: readonly PaymentOption[] = [
     codePrefix: "BRI 0029-01-029384-530 a.n. SAMANGGA INDRAMAYU",
   },
 ];
+
+export function getProductSpecs(product: Product): readonly ProductSpecItem[] {
+  if (product.spesifikasi && product.spesifikasi.length > 0) {
+    return product.spesifikasi;
+  }
+  return [
+    { label: "Kategori Produk", value: product.category },
+    { label: "Petani / Produsen", value: product.seller },
+    { label: "Asal Komoditas", value: product.location },
+    { label: "Satuan Penjualan", value: product.priceUnit },
+    { label: "Stok Tersedia", value: `${product.stock} ${product.stockUnit}` },
+    { label: "Standar Mutu", value: "Terkurasi Mitra Tani Indramayu" },
+  ];
+}
