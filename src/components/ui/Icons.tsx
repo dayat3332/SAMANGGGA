@@ -35,6 +35,7 @@ import {
   faTableColumns,
   faTowerBroadcast,
   faTruckFast,
+  faUser,
   faUserGear,
   faUsers,
   faXmark,
@@ -103,6 +104,10 @@ export function BasketIcon({ className = "h-5 w-5" }: IconProps): JSX.Element {
 
 export function ShoppingBagIcon({ className = "h-5 w-5" }: IconProps): JSX.Element {
   return <FaIcon icon={faBagShopping} className={className} />;
+}
+
+export function UserIcon({ className = "h-4 w-4" }: IconProps): JSX.Element {
+  return <FaIcon icon={faUser} className={className} />;
 }
 
 export function UsersIcon({ className = "h-4 w-4" }: IconProps): JSX.Element {

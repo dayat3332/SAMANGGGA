@@ -16,6 +16,7 @@ import {
   FactoryIcon,
   HouseIcon,
   ReceiptIcon,
+  SearchIcon,
   RecycleIcon,
   ShieldCheckIcon,
   ShoppingBagIcon,
@@ -36,10 +37,12 @@ import {
   INITIAL_PRODUK_LIST,
   INITIAL_RIWAYAT_PENGIRIMAN_LIST,
   INITIAL_TRANSAKSI_LIST,
+  ROLE_STORAGE_KEY,
   type AnyRoleProfile,
   type RoleSlug,
 } from "@/data/profil";
 import { formatNumber, formatRupiah } from "@/lib/format";
+import { notifyAuthChange } from "@/components/layout/SiteNavbar";
 import type {
   DetailTransaksi,
   JenisKeuangan,
@@ -272,27 +275,27 @@ function getStatusBadge(status: string): string {
     case "Selesai":
     case "Tiba di Lokasi":
     case "Pemasukan":
-      return "bg-emerald-100 text-emerald-900 border-emerald-300";
+      return "bg-emerald-50 text-emerald-700 border-emerald-100";
     case "Menunggu":
     case "Pending":
     case "Diajukan":
     case "Tersedia":
     case "Warning":
-      return "bg-amber-100 text-amber-900 border-amber-300";
+      return "bg-amber-50 text-amber-700 border-amber-100";
     case "Diproses":
     case "Proses":
     case "Dalam Perjalanan":
     case "Info":
-      return "bg-blue-100 text-blue-900 border-blue-300";
+      return "bg-blue-50 text-blue-700 border-blue-100";
     case "Ditolak":
     case "Gagal":
     case "Batal":
     case "Kedaluwarsa":
     case "Error":
     case "Pengeluaran":
-      return "bg-red-100 text-red-900 border-red-300";
+      return "bg-red-50 text-red-600 border-red-100";
     default:
-      return "bg-gray-100 text-gray-800 border-gray-300";
+      return "bg-gray-50 text-gray-600 border-gray-200";
   }
 }
 
@@ -1194,77 +1197,68 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   const activeTabMeta = availableTabs.find((t) => t.id === activeTab) ?? availableTabs[0];
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#FFFDF6] p-2.5 text-[#273419] sm:p-5 lg:p-7">
-      
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed -top-24 -right-24 h-80 w-80 rounded-full bg-[#FFE39A]/65 blur-xs"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed -bottom-28 -left-24 h-96 w-96 rounded-full bg-[#FFB81C]/35 blur-xs"
-      />
-
-      
-      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-[1440px] flex-col rounded-[32px] bg-gradient-to-b from-[#3D5126] via-[#33441F] to-[#273419] p-3 shadow-2xl sm:p-4 lg:flex-row lg:p-5">
-        
+    <div className="min-h-screen bg-[#F8FAFC] text-gray-900">
+      <div className="mx-auto flex min-h-screen w-full flex-col lg:flex-row">
+        {/* Sidebar Kiri (gaya panel admin putih) */}
         <aside
           aria-label="Navbar Kiri Dashboard CRUD"
-          className="flex w-full shrink-0 flex-col justify-between px-3 py-4 text-white lg:w-64 lg:px-4 lg:py-6 xl:w-68"
+          className="flex w-full shrink-0 flex-col justify-between border-b border-gray-200 bg-white px-4 py-5 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:overflow-y-auto lg:border-b-0 lg:border-r"
         >
           <div className="space-y-6">
-            
-            <div className="flex items-center justify-between px-2">
-              <Link href="/" className="inline-flex items-center gap-2.5 group">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20 p-1.5">
+            {/* Brand */}
+            <div className="flex items-center justify-between px-1">
+              <Link href="/" className="group inline-flex items-center gap-2.5">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#95A87A]/20 p-1.5 ring-1 ring-[#95A87A]/30">
                   <img src="/images/logo_web.png" alt="SAMANGGA" className="h-full w-full object-contain" />
                 </span>
-                <span className="text-xl font-extrabold tracking-tight text-white">
-                  samangga
+                <span className="leading-tight">
+                  <span className="block text-base font-bold tracking-tight text-gray-900">SAMANGGA</span>
+                  <span className="block text-[10px] font-medium text-gray-500">Mangga Naik Kelas</span>
                 </span>
               </Link>
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/12 px-2.5 py-0.5 text-[10px] font-bold text-[#FFE39A]">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#95A87A]/20 px-2 py-0.5 text-[10px] font-bold text-[#273419] ring-1 ring-[#95A87A]/30">
                 {getRoleIcon(currentRole, "h-3 w-3")}
                 <span>{profile.peranErd}</span>
               </span>
             </div>
 
             {/* Info Akun Pengguna */}
-            <div className="rounded-2xl bg-white/8 px-3.5 py-2.5 ring-1 ring-white/10">
-              <div className="flex items-center justify-between text-[10px] font-bold text-[#FFE39A]">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
+              <div className="flex items-center justify-between text-[10px] font-semibold text-gray-500">
                 <span>{profile.peranErd.toUpperCase()}</span>
-                <span className="inline-flex items-center gap-1 text-emerald-300">
+                <span className="inline-flex items-center gap-1 text-emerald-600">
                   <CheckBadgeIcon className="h-3 w-3" />
                   {profile.status_verifikasi}
                 </span>
               </div>
-              <p className="mt-1 truncate text-xs font-extrabold text-white">
+              <p className="mt-1 truncate text-xs font-semibold text-gray-900">
                 {profile.nama_lengkap}
               </p>
-              <p className="truncate text-[10px] text-white/65">
+              <p className="truncate text-[10px] text-gray-500">
                 {profile.email}
               </p>
             </div>
 
-            
             <div>
-              <p className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-white/45">
+              <p className="px-3 text-[11px] font-medium text-gray-400">
                 Menu Dashboard
               </p>
-              <nav aria-label="Menu Dashboard" className="mt-2 space-y-1">
+              <nav aria-label="Menu Dashboard" className="mt-2 space-y-0.5">
                 <button
                   type="button"
                   onClick={() => {
                     setActiveTab("home");
                   }}
-                  className={`flex w-full items-center gap-3 rounded-2xl px-3.5 py-2 text-left text-xs font-bold transition-all ${
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${
                     activeTab === "home"
-                      ? "bg-white/15 text-white shadow-xs ring-1 ring-white/20"
-                      : "text-white/70 hover:bg-white/8 hover:text-white"
+                      ? "bg-[#95A87A]/25 text-[#273419] font-bold shadow-xs"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-[#273419]"
                   }`}
                 >
-                  <HouseIcon className="h-4 w-4 shrink-0 text-[#FFB81C]" />
-                  <span>Home</span>
+                  <HouseIcon
+                    className={`h-4 w-4 shrink-0 ${activeTab === "home" ? "text-[#3D5126]" : "text-gray-400"}`}
+                  />
+                  <span>Dashboard</span>
                 </button>
 
                 {availableTabs.map((tab) => {
@@ -1277,45 +1271,53 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         setActiveTab(tab.id);
                         setSearchQuery("");
                       }}
-                      className={`flex w-full items-center gap-3 rounded-2xl px-3.5 py-2 text-left text-xs font-semibold transition-all ${
+                      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${
                         isAct
-                          ? "bg-white/15 font-extrabold text-white ring-1 ring-[#FFB81C]/40"
-                          : "text-white/70 hover:bg-white/8 hover:text-white"
+                          ? "bg-[#95A87A]/25 text-[#273419] font-bold shadow-xs"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-[#273419]"
                       }`}
                     >
-                      <span className={isAct ? "text-[#FFB81C]" : "text-white/60"}>
+                      <span className={isAct ? "text-[#3D5126]" : "text-gray-400"}>
                         {getTabSidebarIcon(tab.id, "h-4 w-4 shrink-0")}
                       </span>
                       <span className="truncate">{tab.label}</span>
                     </button>
                   );
                 })}
+              </nav>
+            </div>
 
-                
+            <div>
+              <p className="px-3 text-[11px] font-medium text-gray-400">Tools</p>
+              <nav aria-label="Pintasan Halaman Beli" className="mt-2 space-y-0.5">
                 {halamanBeliLinks.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="flex w-full items-center justify-between gap-3 rounded-2xl px-3.5 py-2 text-left text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all group"
+                    className="group flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
                   >
                     <span className="inline-flex items-center gap-3 truncate">
-                      <span className="text-sm">🛒</span>
+                      <ShoppingBagIcon className="h-4 w-4 shrink-0 text-gray-500" />
                       <span className="truncate">{item.label}</span>
                     </span>
-                    <ArrowRightIcon className="h-3 w-3 shrink-0 text-white/40 group-hover:text-[#FFB81C] group-hover:translate-x-0.5 transition-all" />
+                    <ArrowRightIcon className="h-3 w-3 shrink-0 text-gray-300 transition-all group-hover:translate-x-0.5 group-hover:text-[#3D5126]" />
                   </Link>
                 ))}
               </nav>
             </div>
           </div>
 
-          
-          <div className="mt-6 space-y-3">
-            <div className="relative overflow-hidden rounded-3xl bg-[#4B6330]/90 p-4 text-white ring-1 ring-white/15">
-              <p className="text-sm font-extrabold tracking-tight">
+          <div className="mt-6 space-y-4">
+            {/* Kartu promo (gaya "Upgrade to Pro") */}
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#95A87A]/20 via-[#F8FAFC] to-[#95A87A]/25 p-4 ring-1 ring-[#95A87A]/30">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[#95A87A]/30 blur-xl"
+              />
+              <p className="relative text-sm font-bold text-gray-900">
                 {currentRole === "admin" ? "Moderasi Cepat" : "Belanja & Transaksi"}
               </p>
-              <p className="mt-1 text-[11px] leading-relaxed text-white/75">
+              <p className="relative mt-1 text-[11px] leading-relaxed text-gray-600">
                 {currentRole === "petani" &&
                   "Beli pupuk kompos & bibit pohon mangga dari Mitra di halaman biasa."}
                 {currentRole === "umkm" &&
@@ -1329,83 +1331,66 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
               </p>
               <Link
                 href={primaryBeliHref}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#3D5126] px-3.5 py-2 text-[11px] font-bold text-white shadow-xs transition-transform hover:scale-[1.02] hover:bg-[#273419] ring-1 ring-white/20"
+                className="relative mt-3 inline-flex items-center gap-1.5 rounded-lg bg-[#3D5126] px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#273419]"
               >
                 <span>{currentRole === "admin" ? "Buka Moderasi" : "Ke Halaman Beli"}</span>
                 <ArrowRightIcon className="h-3 w-3" />
               </Link>
-
-              
-              <svg
-                viewBox="0 0 180 95"
-                className="mt-2 h-24 w-full"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M15 20 Q 95 45 168 6"
-                  stroke="#FFE39A"
-                  strokeWidth="1.2"
-                  strokeDasharray="3 3"
-                  opacity="0.55"
-                />
-                <rect x="38" y="48" width="96" height="36" rx="8" fill="#273419" />
-                <rect x="30" y="58" width="22" height="28" rx="5" fill="#33441F" />
-                <rect x="120" y="58" width="22" height="28" rx="5" fill="#33441F" />
-                <circle cx="84" cy="34" r="8" fill="#FFE39A" />
-                <path d="M77 31C77 26 91 26 91 33C91 37 89 41 89 41H79L77 31Z" fill="#1E2813" />
-                <rect x="72" y="44" width="24" height="20" rx="6" fill="#FFFFFF" />
-                <rect x="78" y="52" width="22" height="13" rx="2" fill="#95A87A" />
-                <path d="M84 64L96 86H104L94 64H84Z" fill="#FFB81C" />
-                <path d="M76 64L84 86H91L84 64H76Z" fill="#FF8A00" />
-              </svg>
             </div>
 
-            <div className="flex items-center justify-between px-2 text-[11px] text-white/70">
-              <Link href="/login" className="font-bold text-[#FFE39A] hover:underline">
-                ← Keluar (Logout Akun)
-              </Link>
-              <span className="font-mono text-[10px] text-white/45">1 Role Locked</span>
+            {/* Profil singkat & logout */}
+            <div className="flex items-center gap-3 border-t border-gray-100 px-1 pt-4">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#95A87A]/30 text-xs font-bold text-[#273419] ring-1 ring-[#95A87A]/40">
+                {profile.nama_lengkap
+                  .split(" ")
+                  .slice(0, 2)
+                  .map((n) => n[0])
+                  .join("")}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-semibold text-gray-900">{profile.nama_lengkap}</p>
+                <p className="truncate text-[10px] text-gray-500">{profile.peranErd} · 1 Role Locked</p>
+              </div>
             </div>
+            <Link
+              href="/login"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.localStorage.removeItem(ROLE_STORAGE_KEY);
+                  notifyAuthChange();
+                }
+              }}
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600"
+            >
+              ← Keluar (Logout Akun)
+            </Link>
           </div>
         </aside>
 
-        
-        <div className="flex-1 rounded-[28px] bg-white p-5 shadow-inner sm:p-7 lg:p-8 space-y-6">
-          
-          <header className="flex flex-wrap items-center justify-between gap-4">
-            <div className="inline-flex items-center gap-3 rounded-2xl bg-[#F4F6F0] px-4 py-2.5">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[#3D5126]/10 text-[#3D5126]">
-                <SignalIcon className="h-4 w-4" />
+        {/* Area Konten Utama */}
+        <div className="min-w-0 flex-1 space-y-6 px-4 pb-10 sm:px-6 lg:px-8">
+          <header className="sticky top-0 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+            <div className="inline-flex min-w-0 items-center gap-2.5 rounded-lg bg-gray-50 px-3.5 py-2 ring-1 ring-gray-200">
+              <SignalIcon className="h-4 w-4 shrink-0 text-gray-400" />
+              <span className="truncate text-sm text-gray-600">
+                Welcome, <span className="font-semibold text-gray-900">{profile.nama_lengkap.split(" ").slice(0, 2).join(" ")}</span>!
               </span>
-              <span className="text-xs font-bold text-[#3D5126] sm:text-sm">
-                Welcome, {profile.nama_lengkap.split(" ").slice(0, 2).join(" ")}!
-              </span>
-              <span className="rounded-lg bg-[#3D5126] px-2.5 py-0.5 text-[10px] font-extrabold text-[#FFE39A]">
+              <span className="rounded-md bg-[#95A87A]/20 px-2 py-0.5 text-[10px] font-bold text-[#273419] ring-1 ring-[#95A87A]/30">
                 {profile.peranErd}
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
               {currentRole !== "admin" && (
                 <Link
                   href={primaryBeliHref}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#3D5126] px-3.5 py-1.5 text-[11px] font-bold text-white shadow-xs hover:bg-[#273419] transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#3D5126] px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#273419]"
                 >
-                  <span>🛒 Beli Produk</span>
+                  <ShoppingBagIcon className="h-4 w-4 shrink-0 text-white" />
+                  <span>Beli Produk</span>
                   <ArrowRightIcon className="h-3.5 w-3.5" />
                 </Link>
               )}
-
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveTab((prev) => (prev === "home" ? availableTabs[0].id : "home"))
-                }
-                className="rounded-xl border border-[#3D5126]/20 bg-[#F4F6F0] px-3.5 py-1.5 text-[11px] font-bold text-[#3D5126] hover:bg-[#3D5126] hover:text-white transition-colors"
-              >
-                {activeTab === "home" ? "Ke Tabel CRUD →" : "← Ke Home"}
-              </button>
 
               <button
                 type="button"
@@ -1413,21 +1398,21 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   setActiveTab(roleNotif.targetTab);
                 }}
                 aria-label="Notifikasi"
-                className="relative rounded-full p-2 text-gray-400 hover:bg-[#F4F6F0] hover:text-[#3D5126]"
+                className="relative rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
               >
                 <BellIcon className="h-5 w-5" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#FFB81C]" />
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#FFB81C] ring-2 ring-white" />
               </button>
 
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFB81C] text-xs font-extrabold text-[#273419] ring-2 ring-[#FFE39A]">
+              <div className="flex items-center gap-2.5 border-l border-gray-200 pl-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#95A87A]/30 text-xs font-bold text-[#273419] ring-1 ring-[#95A87A]/40">
                   {profile.nama_lengkap
                     .split(" ")
                     .slice(0, 2)
                     .map((n) => n[0])
                     .join("")}
                 </div>
-                <span className="hidden text-xs font-semibold text-[#273419]/80 sm:inline">
+                <span className="hidden text-xs font-medium text-gray-600 sm:inline">
                   {profile.email}
                 </span>
               </div>
@@ -1437,13 +1422,13 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
           {toastMessage && (
             <div
               role="status"
-              className="flex items-center justify-between rounded-2xl border border-[#3D5126]/30 bg-[#F4F6F0] px-4 py-3 text-xs font-bold text-[#273419] shadow-2xs"
+              className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-800 shadow-sm"
             >
               <span>{toastMessage}</span>
               <button
                 type="button"
                 onClick={() => setToastMessage(null)}
-                className="ml-4 rounded px-2 py-0.5 text-xs font-extrabold hover:bg-[#95A87A]/30"
+                className="ml-4 rounded px-2 py-0.5 text-xs font-semibold hover:bg-emerald-100"
               >
                 ✕
               </button>
@@ -1453,20 +1438,38 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
           
           {activeTab === "home" && (
             <section aria-label="Ringkasan Dashboard Ekosistem" className="space-y-6">
+              {/* Judul Halaman */}
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Dashboard</h1>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Kelola aktivitas, transaksi, dan data operasional akun {profile.peranErd} Anda.
+                  </p>
+                </div>
+              </div>
+
               {/* Baris Kartu Ringkasan Penjualan & Pembelian Akun */}
-              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-3xl bg-[#F7F9F4] p-4 ring-1 ring-[#3D5126]/10">
-                  <span className="inline-block rounded-lg bg-[#3D5126]/10 px-2 py-0.5 text-[10px] font-extrabold text-[#3D5126]">
-                    {currentRole === "konsumen"
-                      ? "PESANAN SAYA"
-                      : "HASIL PENJUALAN"}
-                  </span>
-                  <p className="mt-2 text-lg font-extrabold text-[#273419]">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#95A87A]/20 text-[#3D5126]">
+                        <ReceiptIcon className="h-5 w-5" />
+                      </span>
+                      <span className="text-xs font-medium text-gray-500">
+                        {currentRole === "konsumen"
+                          ? "Pesanan Saya"
+                          : "Hasil Penjualan"}
+                      </span>
+                    </div>
+                    <span className="text-gray-300">•••</span>
+                  </div>
+                  <p className="mt-3 text-2xl font-bold text-gray-900">
                     {currentRole === "konsumen"
                       ? formatRupiah(totalNominalBeli)
                       : formatRupiah(totalNominalJual)}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-gray-500">
+                  <p className="mt-1 text-[11px] text-gray-500">
                     {currentRole === "petani" &&
                       `${penjualanRole.length} pesanan mangga dari UMKM & Konsumen`}
                     {currentRole === "umkm" &&
@@ -1480,18 +1483,26 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   </p>
                 </div>
 
-                <div className="rounded-3xl bg-[#FFFDF6] p-4 ring-1 ring-[#FFB81C]/40">
-                  <span className="inline-block rounded-lg bg-[#FFB81C]/25 px-2 py-0.5 text-[10px] font-extrabold text-[#273419]">
-                    {currentRole === "konsumen"
-                      ? "METODE BAYAR AKTIF"
-                      : "PEMBELIAN"}
-                  </span>
-                  <p className="mt-2 text-lg font-extrabold text-[#273419]">
+                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                        <CreditCardIcon className="h-5 w-5" />
+                      </span>
+                      <span className="text-xs font-medium text-gray-500">
+                        {currentRole === "konsumen"
+                          ? "Metode Bayar Aktif"
+                          : "Pembelian"}
+                      </span>
+                    </div>
+                    <span className="text-gray-300">•••</span>
+                  </div>
+                  <p className="mt-3 text-2xl font-bold text-gray-900">
                     {currentRole === "konsumen"
                       ? `${pembayaranList.filter((p) => p.status_pembayaran === "Berhasil").length} Lunas`
                       : formatRupiah(totalNominalBeli)}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-gray-500">
+                  <p className="mt-1 text-[11px] text-gray-500">
                     {currentRole === "petani" &&
                       `${pembelianRole.length} pembelian pupuk & bibit dari Mitra`}
                     {currentRole === "umkm" &&
@@ -1505,18 +1516,30 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   </p>
                 </div>
 
-                <div className="rounded-3xl bg-[#F7F9F4] p-4 ring-1 ring-[#3D5126]/10">
-                  <span className="inline-block rounded-lg bg-[#3D5126]/10 px-2 py-0.5 text-[10px] font-extrabold text-[#3D5126]">
-                    {currentRole === "umkm" || currentRole === "mitra"
-                      ? "VOLUME LIMBAH SIRKULAR"
-                      : "STOK & PENGIRIMAN"}
-                  </span>
-                  <p className="mt-2 text-lg font-extrabold text-[#273419]">
+                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                        {currentRole === "umkm" || currentRole === "mitra" ? (
+                          <RecycleIcon className="h-5 w-5" />
+                        ) : (
+                          <BoxesIcon className="h-5 w-5" />
+                        )}
+                      </span>
+                      <span className="text-xs font-medium text-gray-500">
+                        {currentRole === "umkm" || currentRole === "mitra"
+                          ? "Volume Limbah Sirkular"
+                          : "Stok & Pengiriman"}
+                      </span>
+                    </div>
+                    <span className="text-gray-300">•••</span>
+                  </div>
+                  <p className="mt-3 text-2xl font-bold text-gray-900">
                     {currentRole === "umkm" || currentRole === "mitra"
                       ? `${formatNumber(totalBeratLimbahKg)} Kg`
                       : `${displayedProduk.length} Komoditas`}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-gray-500">
+                  <p className="mt-1 text-[11px] text-gray-500">
                     {currentRole === "petani" && "Komoditas buah mangga siap jual"}
                     {currentRole === "umkm" && "Kulit, biji & buah afkir tercatat"}
                     {currentRole === "mitra" && "Total limbah siap olah jadi pupuk/bibit"}
@@ -1527,16 +1550,22 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   </p>
                 </div>
 
-                <div className="rounded-3xl bg-[#3D5126] p-4 text-white">
-                  <span className="inline-block rounded-lg bg-white/15 px-2 py-0.5 text-[10px] font-extrabold text-[#FFE39A]">
-                    BELANJA PRODUK
-                  </span>
-                  <p className="mt-2 text-sm font-extrabold leading-snug">
+                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                        <ShoppingBagIcon className="h-5 w-5" />
+                      </span>
+                      <span className="text-xs font-medium text-gray-500">Belanja Produk</span>
+                    </div>
+                    <span className="text-gray-300">•••</span>
+                  </div>
+                  <p className="mt-3 text-sm font-semibold leading-snug text-gray-900">
                     {halamanBeliLinks[0]?.label}
                   </p>
                   <Link
                     href={primaryBeliHref}
-                    className="mt-2 inline-flex items-center gap-1 rounded-xl bg-[#FFB81C] px-3 py-1 text-[11px] font-extrabold text-[#273419] hover:bg-[#FFE39A]"
+                    className="mt-2 inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100"
                   >
                     <span>Buka Halaman</span>
                     <ArrowRightIcon className="h-3 w-3" />
@@ -1548,10 +1577,10 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
               <div className="grid grid-cols-1 gap-7 lg:grid-cols-12">
                 
                 <div className="space-y-6 lg:col-span-5">
-                  <div className="rounded-3xl bg-[#F7F9F4] p-5 shadow-2xs space-y-4">
+                  <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-sm font-extrabold text-[#273419]">
+                        <h3 className="text-sm font-bold text-gray-900">
                           Today Task ({roleTasks.length})
                         </h3>
                         <p className="text-[11px] text-gray-500">
@@ -1562,7 +1591,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         type="button"
                         onClick={() => setIsAddingTask(true)}
                         title="Tambah Tugas Baru"
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#3D5126] px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-[#273419] transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#3D5126] px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-[#273419] transition-colors"
                       >
                         <span>+</span>
                         <span>Tambah</span>
@@ -1573,7 +1602,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       {roleTasks.map((task) => (
                         <label
                           key={task.id}
-                          className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 shadow-2xs transition-colors hover:bg-[#FFFDF6]"
+                          className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 transition-colors hover:bg-[#95A87A]/10"
                         >
                           <span className="flex items-center gap-3">
                             <input
@@ -1584,13 +1613,13 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             />
                             <span
                               className={`text-xs font-semibold ${
-                                task.done ? "line-through text-gray-400" : "text-[#273419]"
+                                task.done ? "line-through text-gray-400" : "text-gray-900"
                               }`}
                             >
                               {task.title}
                             </span>
                           </span>
-                          <span className="shrink-0 text-[10px] font-bold text-[#95A87A]">
+                          <span className="shrink-0 text-[10px] font-medium text-gray-400">
                             {task.time}
                           </span>
                         </label>
@@ -1604,17 +1633,17 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   {/* Notification Card (Dengan Tombol Kuning & Lingkaran Konsentris di Kanan Bawah) */}
                   <div>
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-extrabold text-[#273419]">Notification</h3>
+                      <h3 className="text-sm font-bold text-gray-900">Notification</h3>
                       <button
                         type="button"
                         onClick={() => setActiveTab(roleNotif.targetTab)}
-                        className="text-xs font-bold text-[#FF8A00] hover:underline"
+                        className="text-xs font-semibold text-[#3D5126] hover:underline"
                       >
                         View all
                       </button>
                     </div>
 
-                    <div className="relative mt-3 overflow-hidden rounded-3xl bg-gradient-to-r from-[#3D5126] to-[#273419] p-5 text-white shadow-md">
+                    <div className="relative mt-3 overflow-hidden rounded-xl bg-gradient-to-r from-[#3D5126] to-[#273419] p-5 text-white shadow-md">
                       <div
                         aria-hidden="true"
                         className="pointer-events-none absolute -right-8 -bottom-10 h-32 w-32 rounded-full border border-white/15"
@@ -1625,17 +1654,17 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       />
 
                       <div className="relative z-10 flex items-start gap-4">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/12 text-[#FFE39A]">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white">
                           <EditIcon className="h-5 w-5" />
                         </div>
                         <div className="space-y-1">
-                          <p className="text-sm font-extrabold leading-snug">{roleNotif.title}</p>
+                          <p className="text-sm font-bold leading-snug">{roleNotif.title}</p>
                           <p className="text-[11px] text-white/75">{roleNotif.time}</p>
                           <div className="flex flex-wrap gap-2 pt-2">
                             <button
                               type="button"
                               onClick={() => setActiveTab(roleNotif.targetTab)}
-                              className="rounded-xl bg-[#FFB81C] px-4 py-1.5 text-[11px] font-extrabold text-[#273419] shadow-xs transition-colors hover:bg-[#FFE39A]"
+                              className="rounded-lg bg-[#FFB81C] px-4 py-1.5 text-[11px] font-bold text-[#273419] shadow-sm transition-colors hover:bg-[#FFE39A]"
                             >
                               {roleNotif.buttonLabel}
                             </button>
@@ -1657,7 +1686,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   <div>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <h3 className="text-sm font-extrabold text-[#273419]">
+                        <h3 className="text-sm font-bold text-gray-900">
                           Aktivitas Transaksi ({profile.peranErd})
                         </h3>
                         <p className="text-[11px] text-gray-500">
@@ -1669,10 +1698,10 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         <button
                           type="button"
                           onClick={() => setActivityFilter("semua")}
-                          className={`rounded-xl px-2.5 py-1 text-[11px] font-bold ${
+                          className={`rounded-full border px-3 py-1 text-[11px] font-medium ${
                             activityFilter === "semua"
-                              ? "bg-[#3D5126] text-white"
-                              : "bg-[#F4F6F0] text-[#273419]"
+                              ? "border-[#3D5126] bg-[#3D5126] text-white shadow-xs"
+                              : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
                           }`}
                         >
                           Semua
@@ -1680,10 +1709,10 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         <button
                           type="button"
                           onClick={() => setActivityFilter("jual")}
-                          className={`rounded-xl px-2.5 py-1 text-[11px] font-bold ${
+                          className={`rounded-full border px-3 py-1 text-[11px] font-medium ${
                             activityFilter === "jual"
-                              ? "bg-[#3D5126] text-white"
-                              : "bg-[#F4F6F0] text-[#273419]"
+                              ? "border-[#3D5126] bg-[#3D5126] text-white shadow-xs"
+                              : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
                           }`}
                         >
                           Penjualan ({penjualanRole.length})
@@ -1691,10 +1720,10 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         <button
                           type="button"
                           onClick={() => setActivityFilter("beli")}
-                          className={`rounded-xl px-2.5 py-1 text-[11px] font-bold ${
+                          className={`rounded-full border px-3 py-1 text-[11px] font-medium ${
                             activityFilter === "beli"
-                              ? "bg-[#3D5126] text-white"
-                              : "bg-[#F4F6F0] text-[#273419]"
+                              ? "border-[#3D5126] bg-[#3D5126] text-white shadow-xs"
+                              : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
                           }`}
                         >
                           Pembelian ({pembelianRole.length})
@@ -1702,7 +1731,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       </div>
                     </div>
 
-                    <div className="mt-3 rounded-3xl bg-[#F7F9F4] p-4 space-y-2.5">
+                    <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2.5">
                       <div className="max-h-64 space-y-2.5 overflow-y-auto pr-1">
                         {filteredHomeTransactions.map((trx) => {
                           const isSeller = trx.id_penjual === profile.id_user;
@@ -1715,20 +1744,20 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           return (
                             <div
                               key={trx.id_transaksi}
-                              className="flex flex-col justify-between gap-2 rounded-2xl bg-white p-3.5 shadow-2xs sm:flex-row sm:items-center"
+                              className="flex flex-col justify-between gap-2 rounded-lg border border-gray-100 bg-white p-3.5 transition-colors hover:bg-[#95A87A]/10 sm:flex-row sm:items-center"
                             >
                               <div className="space-y-1">
                                 <div className="flex flex-wrap items-center gap-1.5">
                                   <span
-                                    className={`rounded-md px-2 py-0.5 text-[10px] font-extrabold ${
+                                    className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
                                       isSeller
-                                        ? "bg-emerald-100 text-emerald-900"
-                                        : "bg-[#FFB81C]/30 text-[#273419]"
+                                        ? "bg-emerald-50 text-emerald-700"
+                                        : "bg-[#FFB81C]/25 text-[#273419]"
                                     }`}
                                   >
                                     {isSeller ? "PENJUALAN (Masuk)" : "PEMBELIAN (Keluar)"}
                                   </span>
-                                  <span className="font-mono text-xs font-bold text-[#3D5126]">
+                                  <span className="font-mono text-xs font-bold text-gray-900">
                                     #{trx.id_transaksi}
                                   </span>
                                   <span className="text-[11px] text-gray-400">
@@ -1736,7 +1765,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   </span>
                                 </div>
 
-                                <p className="text-xs font-extrabold text-[#273419]">
+                                <p className="text-xs font-bold text-gray-900">
                                   {items
                                     .map((d) => {
                                       const pr = produkList.find((p) => p.id_produk === d.id_produk);
@@ -1752,7 +1781,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               </div>
 
                               <div className="flex shrink-0 flex-row items-center justify-between gap-2 sm:flex-col sm:items-end">
-                                <p className="text-xs font-extrabold text-[#3D5126]">
+                                <p className="text-xs font-bold text-gray-900">
                                   {formatRupiah(trx.total_harga)}
                                 </p>
                                 <div className="flex items-center gap-1.5">
@@ -1762,7 +1791,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                     </span>
                                   )}
                                   <span
-                                    className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${getStatusBadge(
+                                    className={`rounded-md border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadge(
                                       trx.status,
                                     )}`}
                                   >
@@ -1776,8 +1805,8 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       </div>
 
                       {/* Pintasan Bawah ke Halaman Biasa Buat Beli */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-2.5 shadow-2xs">
-                        <span className="text-xs font-semibold text-[#273419]">
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-2.5">
+                        <span className="text-xs font-semibold text-gray-900">
                           Ingin melakukan transaksi pembelian baru di halaman biasa?
                         </span>
                         <div className="flex flex-wrap gap-1.5">
@@ -1805,15 +1834,15 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
             <div
               role="dialog"
               aria-modal="true"
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm animate-in fade-in"
               onClick={(e) => {
                 if (e.target === e.currentTarget) setIsAddingTask(false);
               }}
             >
-              <div className="relative w-full max-w-md rounded-3xl border border-gray-100 bg-white p-6 shadow-2xl space-y-4">
+              <div className="relative w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-2xl space-y-4">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                   <div>
-                    <h3 className="text-base font-extrabold text-[#273419]">
+                    <h3 className="text-base font-bold text-gray-900">
                       Tambah Agenda / Tugas
                     </h3>
                     <p className="text-xs text-gray-500">
@@ -1832,7 +1861,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
 
                 <form onSubmit={handleAddRoleTask} className="space-y-4 text-xs">
                   <div>
-                    <label className="block font-bold text-[#273419]">
+                    <label className="block font-medium text-gray-700">
                       Judul Tugas / Agenda *
                     </label>
                     <input
@@ -1842,11 +1871,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       value={newTaskTitle}
                       onChange={(e) => setNewTaskTitle(e.target.value)}
                       placeholder="Misal: Proses 5 Kwintal Mangga dari Konsumen #404"
-                      className="mt-1 h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs focus:border-[#3D5126] focus:outline-none"
+                      className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-xs focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-[#273419]">
+                    <label className="block font-medium text-gray-700">
                       Estimasi Jam Operasional
                     </label>
                     <input
@@ -1854,20 +1883,20 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       value={newTaskTime}
                       onChange={(e) => setNewTaskTime(e.target.value)}
                       placeholder="Misal: 08:00-10:00 AM"
-                      className="mt-1 h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs focus:border-[#3D5126] focus:outline-none"
+                      className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-xs focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                     />
                   </div>
                   <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
                     <button
                       type="button"
                       onClick={() => setIsAddingTask(false)}
-                      className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50"
+                      className="rounded-lg border border-gray-200 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50"
                     >
                       Batal
                     </button>
                     <button
                       type="submit"
-                      className="rounded-xl bg-[#3D5126] px-5 py-2 font-bold text-white hover:bg-[#273419]"
+                      className="rounded-lg bg-[#3D5126] px-5 py-2 font-semibold text-white shadow-sm hover:bg-[#273419]"
                     >
                       Simpan Agenda
                     </button>
@@ -1881,22 +1910,87 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
           {activeTab !== "home" && (
             <main id="crud-table-workspace" className="space-y-5">
               {/* Header Tabel & Breadcrumb */}
-              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+                <div>
                   <button
                     type="button"
                     onClick={() => setActiveTab("home")}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#F4F6F0] px-3.5 py-1.5 text-xs font-bold text-[#3D5126] transition-colors hover:bg-[#3D5126] hover:text-white"
+                    className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 transition-colors hover:text-[#3D5126]"
                   >
                     <span>← Home</span>
                   </button>
-                  <h1 className="text-lg font-extrabold text-[#273419] sm:text-xl">
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
                     {activeTabMeta.label}
                   </h1>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Kelola data {activeTabMeta.tableName.toLowerCase()} akun {profile.peranErd} Anda.
+                  </p>
                 </div>
 
-                {/* Pill Tab Switcher di dalam Kanvas */}
-                <div className="flex flex-wrap gap-1.5">
+                {/* Tombol Aksi Utama */}
+                {activeTab !== "profil" && (
+                  <div className="flex items-center gap-2">
+                    {activeTab === "produk" && (
+                      <button
+                        type="button"
+                        onClick={openCreateProduk}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#3D5126] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#273419]"
+                      >
+                        + Tambah Produk
+                      </button>
+                    )}
+                    {activeTab === "limbah" && (
+                      <button
+                        type="button"
+                        onClick={openCreateLimbah}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#3D5126] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#273419]"
+                      >
+                        + Tambah Limbah
+                      </button>
+                    )}
+                    {activeTab === "transaksi" && (
+                      <button
+                        type="button"
+                        onClick={openCreateTransaksi}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#3D5126] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#273419]"
+                      >
+                        + Tambah Transaksi
+                      </button>
+                    )}
+                    {activeTab === "pengiriman" && (
+                      <button
+                        type="button"
+                        onClick={openCreatePengiriman}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#3D5126] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#273419]"
+                      >
+                        + Tambah Pengiriman
+                      </button>
+                    )}
+                    {activeTab === "keuangan" && (
+                      <button
+                        type="button"
+                        onClick={openCreateKeuangan}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#3D5126] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#273419]"
+                      >
+                        + Catat Keuangan
+                      </button>
+                    )}
+                    {activeTab === "pengguna" && (
+                      <button
+                        type="button"
+                        onClick={openCreatePengguna}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#3D5126] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#273419]"
+                      >
+                        + Tambah Pengguna
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Pill Tab Switcher & Pencarian */}
+              <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
+                <div className="flex flex-wrap gap-2">
                   {availableTabs.map((tab) => {
                     const isAct = activeTab === tab.id;
                     return (
@@ -1907,10 +2001,10 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           setActiveTab(tab.id);
                           setSearchQuery("");
                         }}
-                        className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                        className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
                           isAct
-                            ? "bg-[#3D5126] text-white shadow-xs"
-                            : "bg-[#F4F6F0] text-[#273419] hover:bg-[#95A87A]/25"
+                            ? "border-[#3D5126] bg-[#3D5126] text-white shadow-xs"
+                            : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
                         }`}
                       >
                         {tab.label}
@@ -1918,85 +2012,26 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                     );
                   })}
                 </div>
-              </div>
 
-              {/* Search & Action Bar */}
-              {activeTab !== "profil" && (
-                <div className="flex flex-col justify-between gap-3 rounded-2xl bg-[#F7F9F4] p-3.5 sm:flex-row sm:items-center">
-                  <div className="flex-1">
+                {activeTab !== "profil" && (
+                  <div className="relative w-full lg:max-w-xs">
+                    <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
                     <input
                       type="search"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Cari data pada tabel ini..."
-                      className="h-10 w-full max-w-md rounded-xl border border-gray-200 bg-white px-3.5 text-xs text-[#273419] placeholder:text-gray-400 focus:border-[#3D5126] focus:outline-none"
+                      className="h-9 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-xs text-gray-900 placeholder:text-gray-400 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                     />
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    {activeTab === "produk" && (
-                      <button
-                        type="button"
-                        onClick={openCreateProduk}
-                        className="rounded-xl bg-[#3D5126] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#273419] transition-colors"
-                      >
-                        + Tambah Produk
-                      </button>
-                    )}
-                    {activeTab === "limbah" && (
-                      <button
-                        type="button"
-                        onClick={openCreateLimbah}
-                        className="rounded-xl bg-[#3D5126] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#273419] transition-colors"
-                      >
-                        + Tambah Limbah
-                      </button>
-                    )}
-                    {activeTab === "transaksi" && (
-                      <button
-                        type="button"
-                        onClick={openCreateTransaksi}
-                        className="rounded-xl bg-[#3D5126] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#273419] transition-colors"
-                      >
-                        + Tambah Transaksi
-                      </button>
-                    )}
-                    {activeTab === "pengiriman" && (
-                      <button
-                        type="button"
-                        onClick={openCreatePengiriman}
-                        className="rounded-xl bg-[#3D5126] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#273419] transition-colors"
-                      >
-                        + Tambah Pengiriman
-                      </button>
-                    )}
-                    {activeTab === "keuangan" && (
-                      <button
-                        type="button"
-                        onClick={openCreateKeuangan}
-                        className="rounded-xl bg-[#3D5126] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#273419] transition-colors"
-                      >
-                        + Catat Keuangan
-                      </button>
-                    )}
-                    {activeTab === "pengguna" && (
-                      <button
-                        type="button"
-                        onClick={openCreatePengguna}
-                        className="rounded-xl bg-[#3D5126] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#273419] transition-colors"
-                      >
-                        + Tambah Pengguna
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
 
             
             {activeTab === "produk" && (
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs space-y-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                 <div>
-                  <h2 className="text-base font-extrabold text-[#273419]">
+                  <h2 className="text-base font-bold text-gray-900">
                     Data Produk ({currentRole === "petani" ? "Buah" : currentRole === "umkm" ? "Olahan" : "Semua Produk"})
                   </h2>
                   <p className="text-xs text-gray-500">
@@ -2008,15 +2043,15 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   <div
                     role="dialog"
                     aria-modal="true"
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs animate-in fade-in"
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gray-900/40 p-4 backdrop-blur-sm animate-in fade-in"
                     onClick={(e) => {
                       if (e.target === e.currentTarget) setIsProdukFormOpen(false);
                     }}
                   >
-                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-gray-100 space-y-4">
+                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-2xl border border-gray-200 space-y-4">
                       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                         <div>
-                          <h3 className="text-base font-extrabold text-[#273419]">
+                          <h3 className="text-base font-bold text-gray-900">
                             {editingProdukId !== null
                               ? `Edit Produk #${editingProdukId}`
                               : "Tambah Produk Baru"}
@@ -2038,7 +2073,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       <form onSubmit={handleSaveProduk} className="space-y-4 text-xs">
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                           <div className="sm:col-span-2">
-                            <label className="block font-bold">Nama Produk *</label>
+                            <label className="block font-medium text-gray-700">Nama Produk *</label>
                             <input
                               type="text"
                               required
@@ -2046,11 +2081,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               onChange={(e) =>
                                 setFormProduk((prev) => ({ ...prev, nama_produk: e.target.value }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">Kategori (`Buah` / `Olahan`)</label>
+                            <label className="block font-medium text-gray-700">Kategori (`Buah` / `Olahan`)</label>
                             <select
                               value={formProduk.kategori}
                               onChange={(e) =>
@@ -2059,14 +2094,14 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   kategori: e.target.value as KategoriProduk,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Buah">Buah</option>
                               <option value="Olahan">Olahan</option>
                             </select>
                           </div>
                           <div>
-                            <label className="block font-bold">Harga (Rp) *</label>
+                            <label className="block font-medium text-gray-700">Harga (Rp) *</label>
                             <input
                               type="number"
                               required
@@ -2075,11 +2110,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               onChange={(e) =>
                                 setFormProduk((prev) => ({ ...prev, harga: Number(e.target.value) }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">Stok *</label>
+                            <label className="block font-medium text-gray-700">Stok *</label>
                             <input
                               type="number"
                               required
@@ -2088,11 +2123,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               onChange={(e) =>
                                 setFormProduk((prev) => ({ ...prev, stok: Number(e.target.value) }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">Satuan *</label>
+                            <label className="block font-medium text-gray-700">Satuan *</label>
                             <input
                               type="text"
                               required
@@ -2100,22 +2135,22 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               onChange={(e) =>
                                 setFormProduk((prev) => ({ ...prev, satuan: e.target.value }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div className="sm:col-span-2">
-                            <label className="block font-bold">Deskripsi</label>
+                            <label className="block font-medium text-gray-700">Deskripsi</label>
                             <input
                               type="text"
                               value={formProduk.deskripsi}
                               onChange={(e) =>
                                 setFormProduk((prev) => ({ ...prev, deskripsi: e.target.value }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">Status Verifikasi</label>
+                            <label className="block font-medium text-gray-700">Status Verifikasi</label>
                             <select
                               value={formProduk.status_verifikasi}
                               onChange={(e) =>
@@ -2124,7 +2159,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   status_verifikasi: e.target.value as StatusVerifikasi,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Menunggu">Menunggu</option>
                               <option value="Terverifikasi">Terverifikasi</option>
@@ -2137,13 +2172,13 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           <button
                             type="button"
                             onClick={() => setIsProdukFormOpen(false)}
-                            className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50"
+                            className="rounded-lg border border-gray-200 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50"
                           >
                             Batal
                           </button>
                           <button
                             type="submit"
-                            className="rounded-xl bg-[#3D5126] px-5 py-2 font-bold text-white hover:bg-[#273419]"
+                            className="rounded-lg bg-[#3D5126] px-5 py-2 font-semibold text-white shadow-sm hover:bg-[#273419]"
                           >
                             Simpan Data Produk
                           </button>
@@ -2156,7 +2191,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-left text-xs">
                     <thead>
-                      <tr className="border-b border-gray-200 bg-[#F8FAFC] text-[11px] font-extrabold uppercase text-gray-600">
+                      <tr className="border-b border-gray-200 bg-gray-50/70 text-xs font-semibold text-gray-600">
                         <th className="p-3">ID</th>
                         <th className="p-3">Nama Produk</th>
                         <th className="p-3">Kategori</th>
@@ -2166,10 +2201,10 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         <th className="p-3 text-right">Aksi CRUD</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 text-gray-700">
                       {displayedProduk.map((p) => (
-                        <tr key={p.id_produk} className="hover:bg-gray-50/80">
-                          <td className="p-3 font-mono font-bold text-[#3D5126]">#{p.id_produk}</td>
+                        <tr key={p.id_produk} className="transition-colors hover:bg-[#95A87A]/10">
+                          <td className="p-3 font-mono font-medium text-gray-500">#{p.id_produk}</td>
                           <td className="p-3">
                             <div className="flex items-center gap-3">
                               {p.gambar && (
@@ -2180,13 +2215,13 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                 />
                               )}
                               <div>
-                                <p className="font-bold text-[#273419]">{p.nama_produk}</p>
+                                <p className="font-bold text-gray-900">{p.nama_produk}</p>
                                 <p className="text-[11px] text-gray-500 line-clamp-1">{p.deskripsi}</p>
                               </div>
                             </div>
                           </td>
                           <td className="p-3 font-semibold">{p.kategori}</td>
-                          <td className="p-3 font-bold text-[#3D5126]">
+                          <td className="p-3 font-bold text-gray-900">
                             {formatRupiah(p.harga)} / {p.satuan}
                           </td>
                           <td className="p-3 font-semibold">
@@ -2194,7 +2229,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           </td>
                           <td className="p-3">
                             <span
-                              className={`inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getStatusBadge(
+                              className={`inline-block rounded-md border px-2.5 py-1 text-[10px] font-semibold ${getStatusBadge(
                                 p.status_verifikasi,
                               )}`}
                             >
@@ -2206,14 +2241,14 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               <button
                                 type="button"
                                 onClick={() => openEditProduk(p)}
-                                className="rounded-lg border border-gray-300 bg-white px-2.5 py-1 font-bold text-[#273419] hover:bg-gray-100"
+                                className="rounded-md border border-gray-200 bg-white px-2.5 py-1 font-medium text-gray-700 hover:border-[#3D5126] hover:bg-[#95A87A]/20 hover:text-[#273419]"
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeleteProduk(p.id_produk)}
-                                className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 font-bold text-red-700 hover:bg-red-100"
+                                className="rounded-md border border-red-100 bg-red-50 px-2.5 py-1 font-medium text-red-600 hover:bg-red-100"
                               >
                                 Hapus
                               </button>
@@ -2229,9 +2264,9 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
 
             
             {activeTab === "limbah" && (
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs space-y-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                 <div>
-                  <h2 className="text-base font-extrabold text-[#273419]">
+                  <h2 className="text-base font-bold text-gray-900">
                     Data Limbah Sirkular
                   </h2>
                   <p className="text-xs text-gray-500">
@@ -2243,15 +2278,15 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   <div
                     role="dialog"
                     aria-modal="true"
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs animate-in fade-in"
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gray-900/40 p-4 backdrop-blur-sm animate-in fade-in"
                     onClick={(e) => {
                       if (e.target === e.currentTarget) setIsLimbahFormOpen(false);
                     }}
                   >
-                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-gray-100 space-y-4">
+                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-2xl border border-gray-200 space-y-4">
                       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                         <div>
-                          <h3 className="text-base font-extrabold text-[#273419]">
+                          <h3 className="text-base font-bold text-gray-900">
                             {editingLimbahId !== null
                               ? `Edit Data Limbah #${editingLimbahId}`
                               : "Tambah Data Limbah Baru"}
@@ -2273,7 +2308,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       <form onSubmit={handleSaveLimbah} className="space-y-4 text-xs">
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                           <div>
-                            <label className="block font-bold">Jenis Limbah *</label>
+                            <label className="block font-medium text-gray-700">Jenis Limbah *</label>
                             <select
                               value={formLimbah.jenis_limbah}
                               onChange={(e) =>
@@ -2282,7 +2317,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   jenis_limbah: e.target.value as JenisLimbahErd,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Kulit">Kulit</option>
                               <option value="Biji">Biji</option>
@@ -2290,7 +2325,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             </select>
                           </div>
                           <div>
-                            <label className="block font-bold">Berat (Kg) *</label>
+                            <label className="block font-medium text-gray-700">Berat (Kg) *</label>
                             <input
                               type="number"
                               required
@@ -2299,11 +2334,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               onChange={(e) =>
                                 setFormLimbah((prev) => ({ ...prev, berat_kg: Number(e.target.value) }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">Jenis Kompensasi</label>
+                            <label className="block font-medium text-gray-700">Jenis Kompensasi</label>
                             <select
                               value={formLimbah.jenis_kompensasi}
                               onChange={(e) =>
@@ -2312,7 +2347,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   jenis_kompensasi: e.target.value as JenisKompensasi,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Jual Beli">Jual Beli</option>
                               <option value="Jasa Berbayar">Jasa Berbayar</option>
@@ -2320,7 +2355,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             </select>
                           </div>
                           <div>
-                            <label className="block font-bold">Estimasi Harga (Rp)</label>
+                            <label className="block font-medium text-gray-700">Estimasi Harga (Rp)</label>
                             <input
                               type="number"
                               min={0}
@@ -2331,11 +2366,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   estimasi_harga: Number(e.target.value),
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">Harga Kesepakatan (Rp)</label>
+                            <label className="block font-medium text-gray-700">Harga Kesepakatan (Rp)</label>
                             <input
                               type="number"
                               min={0}
@@ -2346,11 +2381,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   harga_kesepakatan: Number(e.target.value),
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">Status Jemput</label>
+                            <label className="block font-medium text-gray-700">Status Jemput</label>
                             <select
                               value={formLimbah.status_jemput}
                               onChange={(e) =>
@@ -2359,7 +2394,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   status_jemput: e.target.value as StatusJemput,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Tersedia">Tersedia</option>
                               <option value="Diajukan">Diajukan</option>
@@ -2368,7 +2403,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             </select>
                           </div>
                           <div className="sm:col-span-2">
-                            <label className="block font-bold">Lokasi Penjemputan *</label>
+                            <label className="block font-medium text-gray-700">Lokasi Penjemputan *</label>
                             <input
                               type="text"
                               required
@@ -2379,11 +2414,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   lokasi_penjemputan: e.target.value,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">Status Verifikasi</label>
+                            <label className="block font-medium text-gray-700">Status Verifikasi</label>
                             <select
                               value={formLimbah.status_verifikasi}
                               onChange={(e) =>
@@ -2392,7 +2427,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   status_verifikasi: e.target.value as StatusVerifikasi,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Menunggu">Menunggu</option>
                               <option value="Terverifikasi">Terverifikasi</option>
@@ -2405,13 +2440,13 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           <button
                             type="button"
                             onClick={() => setIsLimbahFormOpen(false)}
-                            className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50"
+                            className="rounded-lg border border-gray-200 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50"
                           >
                             Batal
                           </button>
                           <button
                             type="submit"
-                            className="rounded-xl bg-[#3D5126] px-5 py-2 font-bold text-white hover:bg-[#273419]"
+                            className="rounded-lg bg-[#3D5126] px-5 py-2 font-semibold text-white shadow-sm hover:bg-[#273419]"
                           >
                             Simpan Data Limbah
                           </button>
@@ -2424,7 +2459,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-left text-xs">
                     <thead>
-                      <tr className="border-b border-gray-200 bg-[#F8FAFC] text-[11px] font-extrabold uppercase text-gray-600">
+                      <tr className="border-b border-gray-200 bg-gray-50/70 text-xs font-semibold text-gray-600">
                         <th className="p-3">ID</th>
                         <th className="p-3">Jenis & Berat</th>
                         <th className="p-3">Kompensasi & Harga</th>
@@ -2434,16 +2469,16 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         <th className="p-3 text-right">Aksi CRUD</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 text-gray-700">
                       {displayedLimbah.map((l) => (
-                        <tr key={l.id_limbah} className="hover:bg-gray-50/80">
-                          <td className="p-3 font-mono font-bold text-[#3D5126]">#{l.id_limbah}</td>
+                        <tr key={l.id_limbah} className="transition-colors hover:bg-[#95A87A]/10">
+                          <td className="p-3 font-mono font-medium text-gray-500">#{l.id_limbah}</td>
                           <td className="p-3">
-                            <p className="font-bold text-[#273419]">{l.jenis_limbah}</p>
+                            <p className="font-bold text-gray-900">{l.jenis_limbah}</p>
                             <p className="text-[11px] text-gray-500">{formatNumber(l.berat_kg)} kg</p>
                           </td>
                           <td className="p-3">
-                            <p className="font-semibold text-[#3D5126]">{l.jenis_kompensasi ?? "-"}</p>
+                            <p className="font-semibold text-gray-900">{l.jenis_kompensasi ?? "-"}</p>
                             <p className="text-[11px] text-gray-600">
                               Sepakat:{" "}
                               {l.harga_kesepakatan !== null
@@ -2459,7 +2494,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           </td>
                           <td className="p-3">
                             <span
-                              className={`inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getStatusBadge(
+                              className={`inline-block rounded-md border px-2.5 py-1 text-[10px] font-semibold ${getStatusBadge(
                                 l.status_jemput,
                               )}`}
                             >
@@ -2468,7 +2503,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           </td>
                           <td className="p-3">
                             <span
-                              className={`inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getStatusBadge(
+                              className={`inline-block rounded-md border px-2.5 py-1 text-[10px] font-semibold ${getStatusBadge(
                                 l.status_verifikasi,
                               )}`}
                             >
@@ -2480,14 +2515,14 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               <button
                                 type="button"
                                 onClick={() => openEditLimbah(l)}
-                                className="rounded-lg border border-gray-300 bg-white px-2.5 py-1 font-bold text-[#273419] hover:bg-gray-100"
+                                className="rounded-md border border-gray-200 bg-white px-2.5 py-1 font-medium text-gray-700 hover:border-[#3D5126] hover:bg-[#95A87A]/20 hover:text-[#273419]"
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeleteLimbah(l.id_limbah)}
-                                className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 font-bold text-red-700 hover:bg-red-100"
+                                className="rounded-md border border-red-100 bg-red-50 px-2.5 py-1 font-medium text-red-600 hover:bg-red-100"
                               >
                                 Hapus
                               </button>
@@ -2503,9 +2538,9 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
 
             
             {(activeTab === "transaksi" || activeTab === "pembayaran") && (
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs space-y-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                 <div>
-                  <h2 className="text-base font-extrabold text-[#273419]">
+                  <h2 className="text-base font-bold text-gray-900">
                     Data Transaksi & Pembayaran
                   </h2>
                   <p className="text-xs text-gray-500">
@@ -2517,15 +2552,15 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   <div
                     role="dialog"
                     aria-modal="true"
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs animate-in fade-in"
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gray-900/40 p-4 backdrop-blur-sm animate-in fade-in"
                     onClick={(e) => {
                       if (e.target === e.currentTarget) setIsTransaksiFormOpen(false);
                     }}
                   >
-                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-gray-100 space-y-4">
+                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-2xl border border-gray-200 space-y-4">
                       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                         <div>
-                          <h3 className="text-base font-extrabold text-[#273419]">
+                          <h3 className="text-base font-bold text-gray-900">
                             {editingTransaksiId !== null
                               ? `Edit Transaksi #${editingTransaksiId}`
                               : "Tambah Transaksi Baru"}
@@ -2547,7 +2582,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       <form onSubmit={handleSaveTransaksi} className="space-y-4 text-xs">
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                           <div className="sm:col-span-2">
-                            <label className="block font-bold">Pilih Produk *</label>
+                            <label className="block font-medium text-gray-700">Pilih Produk *</label>
                             <select
                               value={formTransaksi.id_produk}
                               onChange={(e) =>
@@ -2556,7 +2591,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   id_produk: Number(e.target.value),
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               {produkList.map((p) => (
                                 <option key={p.id_produk} value={p.id_produk}>
@@ -2572,16 +2607,16 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               );
                               if (!selectedProd) return null;
                               return (
-                                <div className="mt-2 flex items-center gap-2.5 rounded-lg border border-gray-200 bg-[#F8FAFC] p-2">
+                                <div className="mt-2 flex items-center gap-2.5 rounded-lg border border-gray-200 bg-gray-50 p-2">
                                   {selectedProd.gambar && (
                                     <img
                                       src={selectedProd.gambar}
                                       alt={selectedProd.nama_produk}
-                                      className="h-10 w-10 shrink-0 rounded-md object-cover border border-gray-200 shadow-2xs"
+                                      className="h-10 w-10 shrink-0 rounded-md object-cover border border-gray-200 shadow-sm"
                                     />
                                   )}
                                   <div className="min-w-0 flex-1">
-                                    <p className="font-bold text-[#273419] truncate">{selectedProd.nama_produk}</p>
+                                    <p className="font-bold text-gray-900 truncate">{selectedProd.nama_produk}</p>
                                     <p className="text-[10px] text-gray-500">
                                       {formatRupiah(selectedProd.harga)}/{selectedProd.satuan} · Stok: {selectedProd.stok} {selectedProd.satuan}
                                     </p>
@@ -2591,7 +2626,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             })()}
                           </div>
                           <div>
-                            <label className="block font-bold">Jumlah Produk *</label>
+                            <label className="block font-medium text-gray-700">Jumlah Produk *</label>
                             <input
                               type="number"
                               required
@@ -2603,11 +2638,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   jumlah_produk: Number(e.target.value) || 1,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">Status Transaksi</label>
+                            <label className="block font-medium text-gray-700">Status Transaksi</label>
                             <select
                               value={formTransaksi.status}
                               onChange={(e) =>
@@ -2616,7 +2651,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   status: e.target.value as StatusTransaksi,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Pending">Pending</option>
                               <option value="Diproses">Diproses</option>
@@ -2625,7 +2660,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             </select>
                           </div>
                           <div>
-                            <label className="block font-bold">Metode Pembayaran</label>
+                            <label className="block font-medium text-gray-700">Metode Pembayaran</label>
                             <select
                               value={formTransaksi.metode_pembayaran}
                               onChange={(e) =>
@@ -2634,7 +2669,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   metode_pembayaran: e.target.value as MetodePembayaran,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Transfer Manual">Transfer Manual</option>
                               <option value="Virtual Account">Virtual Account</option>
@@ -2642,7 +2677,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             </select>
                           </div>
                           <div>
-                            <label className="block font-bold">Status Pembayaran</label>
+                            <label className="block font-medium text-gray-700">Status Pembayaran</label>
                             <select
                               value={formTransaksi.status_pembayaran}
                               onChange={(e) =>
@@ -2651,7 +2686,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   status_pembayaran: e.target.value as StatusPembayaran,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Menunggu">Menunggu</option>
                               <option value="Berhasil">Berhasil</option>
@@ -2665,13 +2700,13 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           <button
                             type="button"
                             onClick={() => setIsTransaksiFormOpen(false)}
-                            className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50"
+                            className="rounded-lg border border-gray-200 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50"
                           >
                             Batal
                           </button>
                           <button
                             type="submit"
-                            className="rounded-xl bg-[#3D5126] px-5 py-2 font-bold text-white hover:bg-[#273419]"
+                            className="rounded-lg bg-[#3D5126] px-5 py-2 font-semibold text-white shadow-sm hover:bg-[#273419]"
                           >
                             Simpan Transaksi
                           </button>
@@ -2684,7 +2719,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-left text-xs">
                     <thead>
-                      <tr className="border-b border-gray-200 bg-[#F8FAFC] text-[11px] font-extrabold uppercase text-gray-600">
+                      <tr className="border-b border-gray-200 bg-gray-50/70 text-xs font-semibold text-gray-600">
                         <th className="p-3">ID Transaksi</th>
                         <th className="p-3">Pembeli & Penjual</th>
                         <th className="p-3">Detail Item</th>
@@ -2694,22 +2729,22 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         <th className="p-3 text-right">Aksi CRUD</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 text-gray-700">
                       {displayedTransaksi.map((t) => {
                         const details = detailTransaksiList.filter(
                           (d) => d.id_transaksi === t.id_transaksi,
                         );
                         const pay = pembayaranList.find((p) => p.id_transaksi === t.id_transaksi);
                         return (
-                          <tr key={t.id_transaksi} className="hover:bg-gray-50/80">
-                            <td className="p-3 font-mono font-bold text-[#3D5126]">
+                          <tr key={t.id_transaksi} className="transition-colors hover:bg-[#95A87A]/10">
+                            <td className="p-3 font-mono font-medium text-gray-500">
                               #{t.id_transaksi}
                               <span className="block text-[10px] font-normal text-gray-400">
                                 {t.tgl_transaksi}
                               </span>
                             </td>
                             <td className="p-3">
-                              <p className="font-semibold text-[#273419]">
+                              <p className="font-semibold text-gray-900">
                                 Pembeli: #{t.id_pembeli} ({getUserName(t.id_pembeli).split(" ")[0]})
                               </p>
                               <p className="text-[11px] text-gray-500">
@@ -2725,7 +2760,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                       <img
                                         src={pr.gambar}
                                         alt={pr.nama_produk}
-                                        className="h-8 w-8 shrink-0 rounded-md object-cover border border-gray-200 shadow-2xs"
+                                        className="h-8 w-8 shrink-0 rounded-md object-cover border border-gray-200 shadow-sm"
                                       />
                                     )}
                                     <span className="text-[11px]">
@@ -2735,7 +2770,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                 );
                               })}
                             </td>
-                            <td className="p-3 font-bold text-[#273419]">
+                            <td className="p-3 font-bold text-gray-900">
                               {formatRupiah(t.total_harga)}
                             </td>
                             <td className="p-3">
@@ -2743,7 +2778,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                 <div>
                                   <span className="font-semibold">{pay.metode_pembayaran}</span>
                                   <span
-                                    className={`ml-1.5 inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold ${getStatusBadge(
+                                    className={`ml-1.5 inline-block rounded-md border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadge(
                                       pay.status_pembayaran,
                                     )}`}
                                   >
@@ -2756,7 +2791,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             </td>
                             <td className="p-3">
                               <span
-                                className={`inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getStatusBadge(
+                                className={`inline-block rounded-md border px-2.5 py-1 text-[10px] font-semibold ${getStatusBadge(
                                   t.status,
                                 )}`}
                               >
@@ -2768,14 +2803,14 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                 <button
                                   type="button"
                                   onClick={() => openEditTransaksi(t)}
-                                  className="rounded-lg border border-gray-300 bg-white px-2.5 py-1 font-bold text-[#273419] hover:bg-gray-100"
+                                  className="rounded-md border border-gray-200 bg-white px-2.5 py-1 font-medium text-gray-700 hover:border-[#3D5126] hover:bg-[#95A87A]/20 hover:text-[#273419]"
                                 >
                                   Edit
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteTransaksi(t.id_transaksi)}
-                                  className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 font-bold text-red-700 hover:bg-red-100"
+                                  className="rounded-md border border-red-100 bg-red-50 px-2.5 py-1 font-medium text-red-600 hover:bg-red-100"
                                 >
                                   Hapus
                                 </button>
@@ -2792,9 +2827,9 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
 
             
             {activeTab === "pengiriman" && (
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs space-y-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                 <div>
-                  <h2 className="text-base font-extrabold text-[#273419]">
+                  <h2 className="text-base font-bold text-gray-900">
                     Data Pengiriman
                   </h2>
                   <p className="text-xs text-gray-500">
@@ -2806,15 +2841,15 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   <div
                     role="dialog"
                     aria-modal="true"
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs animate-in fade-in"
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gray-900/40 p-4 backdrop-blur-sm animate-in fade-in"
                     onClick={(e) => {
                       if (e.target === e.currentTarget) setIsPengirimanFormOpen(false);
                     }}
                   >
-                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-gray-100 space-y-4">
+                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-2xl border border-gray-200 space-y-4">
                       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                         <div>
-                          <h3 className="text-base font-extrabold text-[#273419]">
+                          <h3 className="text-base font-bold text-gray-900">
                             {editingPengirimanId !== null
                               ? `Edit Pengiriman #${editingPengirimanId}`
                               : "Tambah Pengiriman Baru"}
@@ -2836,7 +2871,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       <form onSubmit={handleSavePengiriman} className="space-y-4 text-xs">
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                           <div>
-                            <label className="block font-bold">Nomor Transaksi *</label>
+                            <label className="block font-medium text-gray-700">Nomor Transaksi *</label>
                             <select
                               value={formPengiriman.id_transaksi}
                               onChange={(e) =>
@@ -2845,7 +2880,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   id_transaksi: Number(e.target.value),
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               {transaksiList.map((t) => (
                                 <option key={t.id_transaksi} value={t.id_transaksi}>
@@ -2855,7 +2890,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             </select>
                           </div>
                           <div>
-                            <label className="block font-bold">No. Resi Lacak *</label>
+                            <label className="block font-medium text-gray-700">No. Resi Lacak *</label>
                             <input
                               type="text"
                               required
@@ -2866,11 +2901,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   no_resi_lacak: e.target.value,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">Status Pengiriman</label>
+                            <label className="block font-medium text-gray-700">Status Pengiriman</label>
                             <select
                               value={formPengiriman.status_pengiriman}
                               onChange={(e) =>
@@ -2879,7 +2914,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   status_pengiriman: e.target.value as StatusPengiriman,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Diproses">Diproses</option>
                               <option value="Dalam Perjalanan">Dalam Perjalanan</option>
@@ -2892,13 +2927,13 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           <button
                             type="button"
                             onClick={() => setIsPengirimanFormOpen(false)}
-                            className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50"
+                            className="rounded-lg border border-gray-200 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50"
                           >
                             Batal
                           </button>
                           <button
                             type="submit"
-                            className="rounded-xl bg-[#3D5126] px-5 py-2 font-bold text-white hover:bg-[#273419]"
+                            className="rounded-lg bg-[#3D5126] px-5 py-2 font-semibold text-white shadow-sm hover:bg-[#273419]"
                           >
                             Simpan Pengiriman
                           </button>
@@ -2911,7 +2946,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-left text-xs">
                     <thead>
-                      <tr className="border-b border-gray-200 bg-[#F8FAFC] text-[11px] font-extrabold uppercase text-gray-600">
+                      <tr className="border-b border-gray-200 bg-gray-50/70 text-xs font-semibold text-gray-600">
                         <th className="p-3">ID Pengiriman</th>
                         <th className="p-3">ID Transaksi</th>
                         <th className="p-3">No. Resi Lacak</th>
@@ -2921,14 +2956,14 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         <th className="p-3 text-right">Aksi CRUD</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 text-gray-700">
                       {pengirimanList.map((s) => (
-                        <tr key={s.id_pengiriman} className="hover:bg-gray-50/80">
-                          <td className="p-3 font-mono font-bold text-[#3D5126]">
+                        <tr key={s.id_pengiriman} className="transition-colors hover:bg-[#95A87A]/10">
+                          <td className="p-3 font-mono font-medium text-gray-500">
                             #{s.id_pengiriman}
                           </td>
                           <td className="p-3 font-mono font-semibold">#{s.id_transaksi}</td>
-                          <td className="p-3 font-mono font-bold text-[#273419]">
+                          <td className="p-3 font-mono font-bold text-gray-900">
                             {s.no_resi_lacak}
                           </td>
                           <td className="p-3">
@@ -2936,7 +2971,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           </td>
                           <td className="p-3">
                             <span
-                              className={`inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getStatusBadge(
+                              className={`inline-block rounded-md border px-2.5 py-1 text-[10px] font-semibold ${getStatusBadge(
                                 s.status_pengiriman,
                               )}`}
                             >
@@ -2949,14 +2984,14 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               <button
                                 type="button"
                                 onClick={() => openEditPengiriman(s)}
-                                className="rounded-lg border border-gray-300 bg-white px-2.5 py-1 font-bold text-[#273419] hover:bg-gray-100"
+                                className="rounded-md border border-gray-200 bg-white px-2.5 py-1 font-medium text-gray-700 hover:border-[#3D5126] hover:bg-[#95A87A]/20 hover:text-[#273419]"
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeletePengiriman(s.id_pengiriman)}
-                                className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 font-bold text-red-700 hover:bg-red-100"
+                                className="rounded-md border border-red-100 bg-red-50 px-2.5 py-1 font-medium text-red-600 hover:bg-red-100"
                               >
                                 Hapus
                               </button>
@@ -2972,9 +3007,9 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
 
             
             {activeTab === "keuangan" && (
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs space-y-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                 <div>
-                  <h2 className="text-base font-extrabold text-[#273419]">
+                  <h2 className="text-base font-bold text-gray-900">
                     Pencatatan Keuangan
                   </h2>
                   <p className="text-xs text-gray-500">
@@ -2986,15 +3021,15 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   <div
                     role="dialog"
                     aria-modal="true"
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs animate-in fade-in"
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gray-900/40 p-4 backdrop-blur-sm animate-in fade-in"
                     onClick={(e) => {
                       if (e.target === e.currentTarget) setIsKeuanganFormOpen(false);
                     }}
                   >
-                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-gray-100 space-y-4">
+                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-2xl border border-gray-200 space-y-4">
                       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                         <div>
-                          <h3 className="text-base font-extrabold text-[#273419]">
+                          <h3 className="text-base font-bold text-gray-900">
                             {editingKeuanganId !== null
                               ? `Edit Catatan Keuangan #${editingKeuanganId}`
                               : "Tambah Catatan Keuangan Baru"}
@@ -3016,7 +3051,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       <form onSubmit={handleSaveKeuangan} className="space-y-4 text-xs">
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
                           <div>
-                            <label className="block font-bold">Acuan Wajib *</label>
+                            <label className="block font-medium text-gray-700">Acuan Wajib *</label>
                             <select
                               value={formKeuangan.refType}
                               onChange={(e) => {
@@ -3030,14 +3065,14 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                       : limbahList[0]?.id_limbah ?? 3001,
                                 }));
                               }}
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="transaksi">ID Transaksi</option>
                               <option value="limbah">ID Limbah</option>
                             </select>
                           </div>
                           <div>
-                            <label className="block font-bold">Pilih Referensi *</label>
+                            <label className="block font-medium text-gray-700">Pilih Referensi *</label>
                             <select
                               value={formKeuangan.refId}
                               onChange={(e) =>
@@ -3046,7 +3081,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   refId: Number(e.target.value),
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               {formKeuangan.refType === "transaksi"
                                 ? transaksiList.map((t) => (
@@ -3062,7 +3097,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             </select>
                           </div>
                           <div>
-                            <label className="block font-bold">Jenis Transaksi *</label>
+                            <label className="block font-medium text-gray-700">Jenis Transaksi *</label>
                             <select
                               value={formKeuangan.jenis_transaksi}
                               onChange={(e) =>
@@ -3071,14 +3106,14 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   jenis_transaksi: e.target.value as JenisKeuangan,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Pemasukan">Pemasukan</option>
                               <option value="Pengeluaran">Pengeluaran</option>
                             </select>
                           </div>
                           <div>
-                            <label className="block font-bold">Jumlah Uang (Rp) *</label>
+                            <label className="block font-medium text-gray-700">Jumlah Uang (Rp) *</label>
                             <input
                               type="number"
                               required
@@ -3090,12 +3125,12 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   jumlah_uang: Number(e.target.value),
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                         </div>
                         <div>
-                          <label className="block font-bold">Keterangan *</label>
+                          <label className="block font-medium text-gray-700">Keterangan *</label>
                           <input
                             type="text"
                             required
@@ -3103,7 +3138,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             onChange={(e) =>
                               setFormKeuangan((prev) => ({ ...prev, keterangan: e.target.value }))
                             }
-                            className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                            className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                           />
                         </div>
 
@@ -3111,13 +3146,13 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           <button
                             type="button"
                             onClick={() => setIsKeuanganFormOpen(false)}
-                            className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50"
+                            className="rounded-lg border border-gray-200 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50"
                           >
                             Batal
                           </button>
                           <button
                             type="submit"
-                            className="rounded-xl bg-[#3D5126] px-5 py-2 font-bold text-white hover:bg-[#273419]"
+                            className="rounded-lg bg-[#3D5126] px-5 py-2 font-semibold text-white shadow-sm hover:bg-[#273419]"
                           >
                             Simpan Catatan Keuangan
                           </button>
@@ -3130,7 +3165,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-left text-xs">
                     <thead>
-                      <tr className="border-b border-gray-200 bg-[#F8FAFC] text-[11px] font-extrabold uppercase text-gray-600">
+                      <tr className="border-b border-gray-200 bg-gray-50/70 text-xs font-semibold text-gray-600">
                         <th className="p-3">ID</th>
                         <th className="p-3">Tanggal</th>
                         <th className="p-3">Acuan (Transaksi / Limbah)</th>
@@ -3140,10 +3175,10 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         <th className="p-3 text-right">Aksi CRUD</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 text-gray-700">
                       {displayedKeuangan.map((k) => (
-                        <tr key={k.id_keuangan} className="hover:bg-gray-50/80">
-                          <td className="p-3 font-mono font-bold text-[#3D5126]">
+                        <tr key={k.id_keuangan} className="transition-colors hover:bg-[#95A87A]/10">
+                          <td className="p-3 font-mono font-medium text-gray-500">
                             #{k.id_keuangan}
                           </td>
                           <td className="p-3 text-gray-500">{k.tgl_pencatatan}</td>
@@ -3154,14 +3189,14 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           </td>
                           <td className="p-3">
                             <span
-                              className={`inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getStatusBadge(
+                              className={`inline-block rounded-md border px-2.5 py-1 text-[10px] font-semibold ${getStatusBadge(
                                 k.jenis_transaksi,
                               )}`}
                             >
                               {k.jenis_transaksi}
                             </span>
                           </td>
-                          <td className="p-3 font-extrabold text-[#273419]">
+                          <td className="p-3 font-bold text-gray-900">
                             {formatRupiah(k.jumlah_uang)}
                           </td>
                           <td className="p-3 text-gray-600">{k.keterangan}</td>
@@ -3170,14 +3205,14 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               <button
                                 type="button"
                                 onClick={() => openEditKeuangan(k)}
-                                className="rounded-lg border border-gray-300 bg-white px-2.5 py-1 font-bold text-[#273419] hover:bg-gray-100"
+                                className="rounded-md border border-gray-200 bg-white px-2.5 py-1 font-medium text-gray-700 hover:border-[#3D5126] hover:bg-[#95A87A]/20 hover:text-[#273419]"
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeleteKeuangan(k.id_keuangan)}
-                                className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 font-bold text-red-700 hover:bg-red-100"
+                                className="rounded-md border border-red-100 bg-red-50 px-2.5 py-1 font-medium text-red-600 hover:bg-red-100"
                               >
                                 Hapus
                               </button>
@@ -3193,9 +3228,9 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
 
             
             {activeTab === "pengguna" && (
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs space-y-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                 <div>
-                  <h2 className="text-base font-extrabold text-[#273419]">
+                  <h2 className="text-base font-bold text-gray-900">
                     Data Pengguna
                   </h2>
                   <p className="text-xs text-gray-500">
@@ -3207,15 +3242,15 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   <div
                     role="dialog"
                     aria-modal="true"
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs animate-in fade-in"
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gray-900/40 p-4 backdrop-blur-sm animate-in fade-in"
                     onClick={(e) => {
                       if (e.target === e.currentTarget) setIsPenggunaFormOpen(false);
                     }}
                   >
-                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-gray-100 space-y-4">
+                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-2xl border border-gray-200 space-y-4">
                       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                         <div>
-                          <h3 className="text-base font-extrabold text-[#273419]">
+                          <h3 className="text-base font-bold text-gray-900">
                             {editingPenggunaId !== null
                               ? `Edit Pengguna #${editingPenggunaId}`
                               : "Tambah Pengguna Baru"}
@@ -3237,7 +3272,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       <form onSubmit={handleSavePengguna} className="space-y-4 text-xs">
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                           <div>
-                            <label className="block font-bold">Nama Lengkap *</label>
+                            <label className="block font-medium text-gray-700">Nama Lengkap *</label>
                             <input
                               type="text"
                               required
@@ -3248,11 +3283,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   nama_lengkap: e.target.value,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">Peran (`ENUM`) *</label>
+                            <label className="block font-medium text-gray-700">Peran (`ENUM`) *</label>
                             <select
                               value={formPengguna.peran}
                               onChange={(e) =>
@@ -3261,7 +3296,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   peran: e.target.value as PeranPengguna,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Supplier">Supplier</option>
                               <option value="UMKM">UMKM</option>
@@ -3271,7 +3306,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             </select>
                           </div>
                           <div>
-                            <label className="block font-bold">Status Verifikasi *</label>
+                            <label className="block font-medium text-gray-700">Status Verifikasi *</label>
                             <select
                               value={formPengguna.status_verifikasi}
                               onChange={(e) =>
@@ -3280,7 +3315,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                   status_verifikasi: e.target.value as StatusVerifikasi,
                                 }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             >
                               <option value="Menunggu">Menunggu</option>
                               <option value="Terverifikasi">Terverifikasi</option>
@@ -3288,7 +3323,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             </select>
                           </div>
                           <div>
-                            <label className="block font-bold">Email *</label>
+                            <label className="block font-medium text-gray-700">Email *</label>
                             <input
                               type="email"
                               required
@@ -3296,11 +3331,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               onChange={(e) =>
                                 setFormPengguna((prev) => ({ ...prev, email: e.target.value }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">No. Telp *</label>
+                            <label className="block font-medium text-gray-700">No. Telp *</label>
                             <input
                               type="text"
                               required
@@ -3308,11 +3343,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               onChange={(e) =>
                                 setFormPengguna((prev) => ({ ...prev, no_telp: e.target.value }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                           <div>
-                            <label className="block font-bold">Alamat *</label>
+                            <label className="block font-medium text-gray-700">Alamat *</label>
                             <input
                               type="text"
                               required
@@ -3320,7 +3355,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               onChange={(e) =>
                                 setFormPengguna((prev) => ({ ...prev, alamat: e.target.value }))
                               }
-                              className="mt-1 h-9 w-full rounded-lg border border-gray-300 bg-white px-3"
+                              className="mt-1 h-9 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                             />
                           </div>
                         </div>
@@ -3329,13 +3364,13 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           <button
                             type="button"
                             onClick={() => setIsPenggunaFormOpen(false)}
-                            className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50"
+                            className="rounded-lg border border-gray-200 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50"
                           >
                             Batal
                           </button>
                           <button
                             type="submit"
-                            className="rounded-xl bg-[#3D5126] px-5 py-2 font-bold text-white hover:bg-[#273419]"
+                            className="rounded-lg bg-[#3D5126] px-5 py-2 font-semibold text-white shadow-sm hover:bg-[#273419]"
                           >
                             Simpan Pengguna
                           </button>
@@ -3348,7 +3383,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-left text-xs">
                     <thead>
-                      <tr className="border-b border-gray-200 bg-[#F8FAFC] text-[11px] font-extrabold uppercase text-gray-600">
+                      <tr className="border-b border-gray-200 bg-gray-50/70 text-xs font-semibold text-gray-600">
                         <th className="p-3">ID User</th>
                         <th className="p-3">Nama Lengkap</th>
                         <th className="p-3">Peran</th>
@@ -3357,12 +3392,12 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         <th className="p-3 text-right">Aksi CRUD</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 text-gray-700">
                       {penggunaList.map((u) => (
-                        <tr key={u.id_user} className="hover:bg-gray-50/80">
-                          <td className="p-3 font-mono font-bold text-[#3D5126]">#{u.id_user}</td>
+                        <tr key={u.id_user} className="transition-colors hover:bg-[#95A87A]/10">
+                          <td className="p-3 font-mono font-medium text-gray-500">#{u.id_user}</td>
                           <td className="p-3">
-                            <p className="font-bold text-[#273419]">{u.nama_lengkap}</p>
+                            <p className="font-bold text-gray-900">{u.nama_lengkap}</p>
                             <p className="text-[11px] text-gray-500">{u.alamat}</p>
                           </td>
                           <td className="p-3 font-bold">{u.peran}</td>
@@ -3372,7 +3407,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           </td>
                           <td className="p-3">
                             <span
-                              className={`inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getStatusBadge(
+                              className={`inline-block rounded-md border px-2.5 py-1 text-[10px] font-semibold ${getStatusBadge(
                                 u.status_verifikasi,
                               )}`}
                             >
@@ -3384,14 +3419,14 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               <button
                                 type="button"
                                 onClick={() => openEditPengguna(u)}
-                                className="rounded-lg border border-gray-300 bg-white px-2.5 py-1 font-bold text-[#273419] hover:bg-gray-100"
+                                className="rounded-md border border-gray-200 bg-white px-2.5 py-1 font-medium text-gray-700 hover:border-[#3D5126] hover:bg-[#95A87A]/20 hover:text-[#273419]"
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeletePengguna(u.id_user)}
-                                className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 font-bold text-red-700 hover:bg-red-100"
+                                className="rounded-md border border-red-100 bg-red-50 px-2.5 py-1 font-medium text-red-600 hover:bg-red-100"
                               >
                                 Hapus
                               </button>
@@ -3407,9 +3442,9 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
 
             
             {activeTab === "log" && (
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs space-y-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                 <div>
-                  <h2 className="text-base font-extrabold text-[#273419]">Log Sistem Platform</h2>
+                  <h2 className="text-base font-bold text-gray-900">Log Sistem Platform</h2>
                   <p className="text-xs text-gray-500">
                     Riwayat aktivitas sistem (`Info`, `Warning`, `Error`), endpoint API, dan kode status HTTP.
                   </p>
@@ -3418,7 +3453,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-left text-xs">
                     <thead>
-                      <tr className="border-b border-gray-200 bg-[#F8FAFC] text-[11px] font-extrabold uppercase text-gray-600">
+                      <tr className="border-b border-gray-200 bg-gray-50/70 text-xs font-semibold text-gray-600">
                         <th className="p-3">ID Log</th>
                         <th className="p-3">Waktu & User</th>
                         <th className="p-3">Level</th>
@@ -3427,10 +3462,10 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         <th className="p-3 text-right">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 text-gray-700">
                       {logList.map((l) => (
-                        <tr key={l.id_log} className="hover:bg-gray-50/80">
-                          <td className="p-3 font-mono font-bold text-[#3D5126]">#{l.id_log}</td>
+                        <tr key={l.id_log} className="transition-colors hover:bg-[#95A87A]/10">
+                          <td className="p-3 font-mono font-medium text-gray-500">#{l.id_log}</td>
                           <td className="p-3">
                             <p className="font-mono text-[11px]">{l.waktu}</p>
                             <p className="text-[11px] text-gray-500">
@@ -3439,7 +3474,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           </td>
                           <td className="p-3">
                             <span
-                              className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold ${getStatusBadge(
+                              className={`inline-block rounded-md border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadge(
                                 l.level,
                               )}`}
                             >
@@ -3447,7 +3482,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             </span>
                           </td>
                           <td className="p-3 font-mono text-[11px]">
-                            <p className="font-bold text-[#273419]">{l.aksi}</p>
+                            <p className="font-bold text-gray-900">{l.aksi}</p>
                             <p className="text-gray-500">{l.endpoint_api}</p>
                           </td>
                           <td className="p-3">
@@ -3462,7 +3497,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             <button
                               type="button"
                               onClick={() => handleDeleteLog(l.id_log)}
-                              className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 font-bold text-red-700 hover:bg-red-100"
+                              className="rounded-md border border-red-100 bg-red-50 px-2.5 py-1 font-medium text-red-600 hover:bg-red-100"
                             >
                               Hapus
                             </button>
@@ -3477,8 +3512,8 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
 
             
             {activeTab === "profil" && (
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-2xs">
-                <h2 className="text-base font-extrabold text-[#273419]">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 className="text-base font-bold text-gray-900">
                   Pengaturan & Update Profil {profile.peranErd}
                 </h2>
                 <p className="text-xs text-gray-500">
@@ -3498,90 +3533,90 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   className="mt-4 grid grid-cols-1 gap-4 text-xs sm:grid-cols-2"
                 >
                   <div>
-                    <label className="block font-bold">Nama Lengkap *</label>
+                    <label className="block font-medium text-gray-700">Nama Lengkap *</label>
                     <input
                       type="text"
                       required
                       value={profile.nama_lengkap}
                       onChange={(e) => updateCurrentProfileField("nama_lengkap", e.target.value)}
-                      className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                      className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold">Email *</label>
+                    <label className="block font-medium text-gray-700">Email *</label>
                     <input
                       type="email"
                       required
                       value={profile.email}
                       onChange={(e) => updateCurrentProfileField("email", e.target.value)}
-                      className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                      className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold">No. Telepon / WhatsApp *</label>
+                    <label className="block font-medium text-gray-700">No. Telepon / WhatsApp *</label>
                     <input
                       type="text"
                       required
                       value={profile.no_telp}
                       onChange={(e) => updateCurrentProfileField("no_telp", e.target.value)}
-                      className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                      className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold">Alamat *</label>
+                    <label className="block font-medium text-gray-700">Alamat *</label>
                     <input
                       type="text"
                       required
                       value={profile.alamat}
                       onChange={(e) => updateCurrentProfileField("alamat", e.target.value)}
-                      className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                      className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                     />
                   </div>
 
                   {profile.slug === "petani" && (
                     <>
                       <div>
-                        <label className="block font-bold">Tipe Supplier (`Petani` / `Pengepul`)</label>
+                        <label className="block font-medium text-gray-700">Tipe Supplier (`Petani` / `Pengepul`)</label>
                         <select
                           value={profile.tipe_supplier}
                           onChange={(e) =>
                             updateCurrentProfileField("tipe_supplier", e.target.value as TipeSupplier)
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 bg-white px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         >
                           <option value="Petani">Petani</option>
                           <option value="Pengepul">Pengepul</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block font-bold">Luas Lahan (m²)</label>
+                        <label className="block font-medium text-gray-700">Luas Lahan (m²)</label>
                         <input
                           type="number"
                           value={profile.luas_lahan_m2}
                           onChange={(e) =>
                             updateCurrentProfileField("luas_lahan_m2", Number(e.target.value))
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                       <div>
-                        <label className="block font-bold">Jenis Komoditas Utama</label>
+                        <label className="block font-medium text-gray-700">Jenis Komoditas Utama</label>
                         <input
                           type="text"
                           value={profile.jenis_komoditas_utama}
                           onChange={(e) =>
                             updateCurrentProfileField("jenis_komoditas_utama", e.target.value)
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                       <div>
-                        <label className="block font-bold">Nama Bank & No. Rekening</label>
+                        <label className="block font-medium text-gray-700">Nama Bank & No. Rekening</label>
                         <input
                           type="text"
                           value={profile.no_rekening}
                           onChange={(e) => updateCurrentProfileField("no_rekening", e.target.value)}
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                     </>
@@ -3590,36 +3625,36 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   {profile.slug === "umkm" && (
                     <>
                       <div>
-                        <label className="block font-bold">Nama Usaha UMKM</label>
+                        <label className="block font-medium text-gray-700">Nama Usaha UMKM</label>
                         <input
                           type="text"
                           value={profile.nama_usaha}
                           onChange={(e) => updateCurrentProfileField("nama_usaha", e.target.value)}
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                       <div>
-                        <label className="block font-bold">NIB</label>
+                        <label className="block font-medium text-gray-700">NIB</label>
                         <input
                           type="text"
                           value={profile.nib}
                           onChange={(e) => updateCurrentProfileField("nib", e.target.value)}
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                       <div>
-                        <label className="block font-bold">Kategori Produk Olahan</label>
+                        <label className="block font-medium text-gray-700">Kategori Produk Olahan</label>
                         <input
                           type="text"
                           value={profile.kategori_produk_olahan}
                           onChange={(e) =>
                             updateCurrentProfileField("kategori_produk_olahan", e.target.value)
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                       <div>
-                        <label className="block font-bold">Kapasitas Produksi Bulanan (Kg)</label>
+                        <label className="block font-medium text-gray-700">Kapasitas Produksi Bulanan (Kg)</label>
                         <input
                           type="number"
                           value={profile.kapasitas_produksi_bulanan}
@@ -3629,7 +3664,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               Number(e.target.value),
                             )
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                     </>
@@ -3638,29 +3673,29 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   {profile.slug === "mitra" && (
                     <>
                       <div>
-                        <label className="block font-bold">Nama Mitra Instansi</label>
+                        <label className="block font-medium text-gray-700">Nama Mitra Instansi</label>
                         <input
                           type="text"
                           value={profile.nama_mitra_instansi}
                           onChange={(e) =>
                             updateCurrentProfileField("nama_mitra_instansi", e.target.value)
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                       <div>
-                        <label className="block font-bold">Jenis Pengolahan Limbah</label>
+                        <label className="block font-medium text-gray-700">Jenis Pengolahan Limbah</label>
                         <input
                           type="text"
                           value={profile.jenis_pengolahan_limbah}
                           onChange={(e) =>
                             updateCurrentProfileField("jenis_pengolahan_limbah", e.target.value)
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                       <div>
-                        <label className="block font-bold">Kapasitas Tampung Limbah (Kg)</label>
+                        <label className="block font-medium text-gray-700">Kapasitas Tampung Limbah (Kg)</label>
                         <input
                           type="number"
                           value={profile.kapasitas_tampung_limbah_kg}
@@ -3670,16 +3705,16 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               Number(e.target.value),
                             )
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                       <div>
-                        <label className="block font-bold">Jangkauan Area</label>
+                        <label className="block font-medium text-gray-700">Jangkauan Area</label>
                         <input
                           type="text"
                           value={profile.jangkauan_area}
                           onChange={(e) => updateCurrentProfileField("jangkauan_area", e.target.value)}
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                     </>
@@ -3688,7 +3723,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   {profile.slug === "konsumen" && (
                     <>
                       <div>
-                        <label className="block font-bold">Kategori Konsumen (`Ritel` / `Grosir`)</label>
+                        <label className="block font-medium text-gray-700">Kategori Konsumen (`Ritel` / `Grosir`)</label>
                         <select
                           value={profile.kategori_konsumen}
                           onChange={(e) =>
@@ -3697,32 +3732,32 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               e.target.value as KategoriKonsumenErd,
                             )
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 bg-white px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         >
                           <option value="Ritel">Ritel</option>
                           <option value="Grosir">Grosir</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block font-bold">Titik Koordinat</label>
+                        <label className="block font-medium text-gray-700">Titik Koordinat</label>
                         <input
                           type="text"
                           value={profile.titik_koordinat}
                           onChange={(e) =>
                             updateCurrentProfileField("titik_koordinat", e.target.value)
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block font-bold">Alamat Pengiriman Utama</label>
+                        <label className="block font-medium text-gray-700">Alamat Pengiriman Utama</label>
                         <input
                           type="text"
                           value={profile.alamat_pengiriman_utama}
                           onChange={(e) =>
                             updateCurrentProfileField("alamat_pengiriman_utama", e.target.value)
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                     </>
@@ -3731,24 +3766,24 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   {profile.slug === "admin" && (
                     <>
                       <div>
-                        <label className="block font-bold">NIP / ID Pegawai</label>
+                        <label className="block font-medium text-gray-700">NIP / ID Pegawai</label>
                         <input
                           type="text"
                           value={profile.nip_id_pegawai}
                           onChange={(e) =>
                             updateCurrentProfileField("nip_id_pegawai", e.target.value)
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                       <div>
-                        <label className="block font-bold">Tingkat Akses Admin</label>
+                        <label className="block font-medium text-gray-700">Tingkat Akses Admin</label>
                         <select
                           value={profile.tingkat_akses}
                           onChange={(e) =>
                             updateCurrentProfileField("tingkat_akses", e.target.value as TingkatAkses)
                           }
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 bg-white px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         >
                           <option value="Super Admin">Super Admin</option>
                           <option value="Admin Transaksi">Admin Transaksi</option>
@@ -3756,12 +3791,12 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         </select>
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block font-bold">Divisi</label>
+                        <label className="block font-medium text-gray-700">Divisi</label>
                         <input
                           type="text"
                           value={profile.divisi}
                           onChange={(e) => updateCurrentProfileField("divisi", e.target.value)}
-                          className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
+                          className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
                         />
                       </div>
                     </>

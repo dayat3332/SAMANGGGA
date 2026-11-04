@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ChangeEvent, FormEvent, JSX } from "react";
-import { Navbar } from "@/components/layout/SiteNavbar";
+import { Navbar, notifyAuthChange } from "@/components/layout/SiteNavbar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import {
   CheckIcon,
@@ -106,6 +106,7 @@ export default function LoginPage(): JSX.Element {
     if (!identifier || !password) return;
     if (typeof window !== "undefined") {
       window.localStorage.setItem(ROLE_STORAGE_KEY, selectedRoleData.slug);
+      notifyAuthChange();
     }
     router.push(`/profil/${selectedRoleData.slug}`);
   };
@@ -113,6 +114,7 @@ export default function LoginPage(): JSX.Element {
   const handleGoogleLogin = (): void => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(ROLE_STORAGE_KEY, selectedRoleData.slug);
+      notifyAuthChange();
     }
     router.push(`/profil/${selectedRoleData.slug}`);
   };
