@@ -4,7 +4,6 @@ const PERAN_VALID: readonly PeranPendaftaran[] = ["Supplier", "UMKM", "Mitra", "
 
 export type PendaftaranErrors = Partial<Record<keyof PendaftaranPayload, string>>;
 
-/** Validasi field mengikuti tabel Pengguna di ERD. Dipakai di client & server. */
 export function validatePendaftaran(data: Partial<Record<keyof PendaftaranPayload, unknown>>): {
   ok: boolean;
   errors: PendaftaranErrors;

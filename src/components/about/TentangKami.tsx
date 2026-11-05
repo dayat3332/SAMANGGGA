@@ -91,7 +91,6 @@ export default function TentangKami(): JSX.Element {
       <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-        {/* Header Seksi */}
         <header className="border-b border-gray-200 pb-6">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-[#95A87A] bg-[#95A87A]/20 px-3 py-1 text-xs font-semibold text-[#273419]">
             <SproutIcon className="h-4 w-4 text-[#3D5126]" />
@@ -107,7 +106,6 @@ export default function TentangKami(): JSX.Element {
           </p>
         </header>
 
-        {/* Ringkasan Indikator Kunci (Metrik) */}
         <section aria-label="Metrik platform" className="mt-6">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {METRICS.map((item) => (
@@ -123,7 +121,6 @@ export default function TentangKami(): JSX.Element {
           </div>
         </section>
 
-        {/* Latar Belakang & Masalah yang Diselesaikan */}
         <section aria-labelledby="latar-belakang-title" className="mt-8">
           <div className="grid gap-4 md:grid-cols-2">
             <article className="flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -166,7 +163,6 @@ export default function TentangKami(): JSX.Element {
           </div>
         </section>
 
-        {/* 4 Pilar Ekosistem Kami */}
         <section aria-labelledby="peran-ekosistem-title" className="mt-10">
           <div className="max-w-xl">
             <span className="text-xs font-bold uppercase tracking-wider text-[#3D5126]">Kolaborasi Ekosistem</span>
@@ -208,7 +204,6 @@ export default function TentangKami(): JSX.Element {
           </div>
         </section>
 
-        {/* Nilai & Prinsip Kerja */}
         <section aria-labelledby="nilai-prinsip-title" className="mt-10 border-t border-gray-200 pt-8">
           <div className="max-w-xl">
             <span className="text-xs font-bold uppercase tracking-wider text-[#3D5126]">Prinsip Operasional</span>
@@ -230,7 +225,6 @@ export default function TentangKami(): JSX.Element {
           </div>
         </section>
 
-        {/* Kartu Ajakan Aksi (CTA) */}
         <section aria-labelledby="cta-title" className="mt-10 mb-12">
           <div className="flex flex-col items-center justify-between gap-4 rounded-2xl bg-[#3D5126] p-6 text-white shadow-md sm:flex-row sm:p-8">
             <div className="text-center sm:text-left">

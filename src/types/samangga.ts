@@ -1,17 +1,9 @@
-/**
- * Model data SAMANGGA — diterjemahkan 1:1 dari gambar ERD:
- * "ERD SAMANGGA: Platform Web Rantai Pasok dan Pasar Limbah Sirkular untuk UMKM Mangga Indramayu".
- *
- * Penamaan field mengikuti diagram (snake_case) agar sesuai persis dengan tabel database.
- * Notasi: PK = primary key, FK = foreign key, `| null` = nullable.
- */
 
 // Akun dan Profil
 
 export type PeranPengguna = "Supplier" | "UMKM" | "Mitra" | "Konsumen" | "Admin";
 export type StatusVerifikasi = "Menunggu" | "Terverifikasi" | "Ditolak";
 
-/** Tabel `Pengguna` — induk seluruh akun. Setiap profil peran mereferensi `id_user`. */
 export interface Pengguna {
   id_user: number; // INT <PK>
   nama_lengkap: string; // VARCHAR
@@ -26,7 +18,6 @@ export interface Pengguna {
 
 export type TipeSupplier = "Petani" | "Pengepul";
 
-/** Tabel `Supplier` — memiliki profil dari `Pengguna` (1:0..1). */
 export interface Supplier {
   id_supplier: number; // INT <PK>
   id_user: number; // INT <FK>
@@ -38,11 +29,9 @@ export interface Supplier {
   no_rekening: string; // VARCHAR
 }
 
-/** Di ERD: ENUM(Ritel, Grosir). Nilai "Individu" disertakan untuk kompatibilitas form lama. */
 export type KategoriKonsumenErd = "Ritel" | "Grosir";
 export type KategoriKonsumen = KategoriKonsumenErd | "Individu";
 
-/** Tabel `Konsumen` — memiliki profil dari `Pengguna` (1:0..1). */
 export interface Konsumen {
   id_konsumen: number; // INT <PK>
   id_user: number; // INT <FK>
@@ -54,7 +43,6 @@ export interface Konsumen {
 
 export type TingkatAkses = "Super Admin" | "Admin Transaksi" | "Admin Limbah";
 
-/** Tabel `Admin` — memiliki profil dari `Pengguna` (1:0..1). */
 export interface Admin {
   id_admin: number; // INT <PK>
   id_user: number; // INT <FK>
@@ -64,7 +52,6 @@ export interface Admin {
   divisi: string; // VARCHAR
 }
 
-/** Tabel `Mitra` — memiliki profil dari `Pengguna` (1:0..1). */
 export interface Mitra {
   id_mitra: number; // INT <PK>
   id_user: number; // INT <FK>
@@ -77,7 +64,6 @@ export interface Mitra {
   no_rekening: string; // VARCHAR
 }
 
-/** Tabel `UMKM` — memiliki profil dari `Pengguna` (1:0..1). */
 export interface UMKM {
   id_umkm: number; // INT <PK>
   id_user: number; // INT <FK>
@@ -94,7 +80,6 @@ export interface UMKM {
 
 export type KategoriProduk = "Buah" | "Olahan";
 
-/** Tabel `Produk` — ditawarkan oleh `Pengguna` (`id_user`). */
 export interface Produk {
   id_produk: number; // INT <PK>
   id_user: number; // INT <FK>
@@ -110,7 +95,6 @@ export interface Produk {
 
 export type StatusTransaksi = "Pending" | "Diproses" | "Selesai" | "Batal";
 
-/** Tabel `Transaksi` — menghubungkan `id_pembeli` dan `id_penjual` (keduanya FK ke `Pengguna`). */
 export interface Transaksi {
   id_transaksi: number; // INT <PK>
   id_pembeli: number; // INT <FK ke Pengguna>
@@ -120,7 +104,6 @@ export interface Transaksi {
   status: StatusTransaksi; // ENUM(Pending, Diproses, Selesai, Batal)
 }
 
-/** Tabel `Detail Transaksi` — rincian item `Produk` pada suatu `Transaksi`. */
 export interface DetailTransaksi {
   id_detail_transaksi: number; // INT <PK>
   id_transaksi: number; // INT <FK>
@@ -133,13 +116,6 @@ export interface DetailTransaksi {
 export type MetodePembayaran = "Transfer Manual" | "Virtual Account" | "QRIS";
 export type StatusPembayaran = "Menunggu" | "Berhasil" | "Gagal" | "Kedaluwarsa";
 
-/**
- * Tabel `Pembayaran`
- * Catatan ERD:
- * - Transfer Manual: `bukti_transfer` diisi, dikonfirmasi penjual.
- * - Virtual Account / QRIS: `kode_pembayaran` dan `id_referensi_gateway` diisi payment gateway,
- *   status diperbarui lewat callback.
- */
 export interface Pembayaran {
   id_pembayaran: number; // INT <PK>
   id_transaksi: number; // INT <FK>
@@ -155,17 +131,14 @@ export interface Pembayaran {
 
 // Limbah, Pengiriman, dan Keuangan
 
-/** Di ERD: ENUM(Kulit, Biji, Buah Afkir). Nilai "Daun" disertakan untuk kompatibilitas halaman katalog sirkular. */
 export type JenisLimbahErd = "Kulit" | "Biji" | "Buah Afkir";
 export type JenisLimbah = JenisLimbahErd | "Daun";
 
 export type JenisKompensasi = "Jual Beli" | "Jasa Berbayar" | "Gratis";
 export type StatusJemput = "Tersedia" | "Diajukan" | "Proses" | "Selesai";
 
-/** Alias kompatibilitas untuk komponen pasar sirkular publik. */
 export type StatusLimbah = StatusJemput | "Dipesan" | "Diproses";
 
-/** Tabel `Limbah` — dicatat oleh `UMKM` (`id_umkm`) dan dijemput oleh `Mitra` (`id_mitra`). */
 export interface Limbah {
   id_limbah: number; // INT <PK>
   id_umkm: number; // INT <FK>
@@ -186,7 +159,6 @@ export interface Limbah {
 
 export type StatusPengiriman = "Diproses" | "Dalam Perjalanan" | "Tiba di Lokasi";
 
-/** Tabel `Riwayat Pengiriman` — memiliki catatan pengiriman dari `Transaksi` & ditangani oleh `Mitra` (`id_mitra`). */
 export interface RiwayatPengiriman {
   id_pengiriman: number; // INT <PK>
   id_transaksi: number; // INT <FK>
@@ -199,10 +171,6 @@ export interface RiwayatPengiriman {
 
 export type JenisKeuangan = "Pemasukan" | "Pengeluaran";
 
-/**
- * Tabel `Pencatatan Keuangan`
- * Catatan ERD: "Aturan: salah satu dari id_transaksi atau id_limbah wajib terisi."
- */
 export interface PencatatanKeuangan {
   id_keuangan: number; // INT <PK>
   id_user: number; // INT <FK>
@@ -218,7 +186,6 @@ export interface PencatatanKeuangan {
 
 export type LevelLog = "Info" | "Warning" | "Error";
 
-/** Tabel `Log Sistem` — dipicu oleh aktivitas `Pengguna` (`id_user` nullable). */
 export interface LogSistem {
   id_log: number; // INT <PK>
   id_user: number | null; // INT <FK, nullable>
@@ -233,7 +200,6 @@ export interface LogSistem {
 
 // Payload Form
 
-/** Peran yang boleh mendaftar sendiri lewat form publik (Admin dibuat internal). */
 export type PeranPendaftaran = Exclude<PeranPengguna, "Admin">;
 
 export interface PendaftaranPayload {

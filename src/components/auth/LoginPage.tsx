@@ -1,12 +1,12 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import type { ChangeEvent, FormEvent, JSX } from "react";
-import { Navbar, notifyAuthChange } from "@/components/layout/SiteNavbar";
+import { Navbar } from "@/components/layout/SiteNavbar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { TopAlertBanner } from "@/components/ui/TopAlertBanner";
 import {
   CheckIcon,
   EyeIcon,
@@ -19,7 +19,8 @@ import {
   UserMailIcon,
   UsersIcon,
 } from "@/components/ui/Icons";
-import { ROLE_STORAGE_KEY, type RoleSlug } from "@/data/profil";
+import { type RoleSlug } from "@/data/profil";
+import { findUserByEmail, setActiveRole } from "@/lib/auth";
 
 type RoleFilter = "Petani" | "UMKM Kuliner" | "Pengolah Residu" | "Pembeli & Ritel" | "Admin Sistem";
 
@@ -75,6 +76,14 @@ const LOGIN_ROLES: readonly RoleOptionData[] = [
   },
 ];
 
+interface GoogleAccountItem {
+  name: string;
+  email: string;
+  avatarText: string;
+  avatarBg: string;
+  roleHint?: string;
+}
+
 function getLoginRoleIcon(role: RoleFilter): JSX.Element {
   switch (role) {
     case "Petani":
@@ -91,41 +100,233 @@ function getLoginRoleIcon(role: RoleFilter): JSX.Element {
   }
 }
 
-export default function LoginPage(): JSX.Element {
+function LoginPageContent(): JSX.Element {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const paramError = searchParams.get("error");
+  const paramGoogle = searchParams.get("google") === "1";
+
   const [selectedRole, setSelectedRole] = useState<RoleFilter>("Petani");
   const [identifier, setIdentifier] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(true);
 
+  // Google Modal State
+  const [showGoogleModal, setShowGoogleModal] = useState<boolean>(paramGoogle);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState<string>("");
+  const [customGoogleName, setCustomGoogleName] = useState<string>("");
+
+  // Top Alert State
+  const [topAlert, setTopAlert] = useState<{
+    variant: "danger" | "warning" | "success";
+    title: string;
+    message: string;
+  } | null>(() => {
+    if (paramError === "unregistered") {
+      return {
+        variant: "danger",
+        title: "Akun Belum Terdaftar",
+        message: "Akun yang Anda gunakan belum terdaftar di SAMANGGA. Silakan daftar terlebih dahulu.",
+      };
+    }
+    return null;
+  });
+
   const selectedRoleData = LOGIN_ROLES.find((r) => r.id === selectedRole) ?? LOGIN_ROLES[0];
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+  const handleManualLogin = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (!identifier || !password) return;
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(ROLE_STORAGE_KEY, selectedRoleData.slug);
-      notifyAuthChange();
+
+    // Cek apakah identifier adalah email yang terdaftar
+    const userFound = findUserByEmail(identifier);
+    if (userFound) {
+      setActiveRole(userFound.role);
+      setTopAlert({
+        variant: "success",
+        title: "Login Berhasil",
+        message: `Selamat datang kembali, ${userFound.namaLengkap}! Mengarahkan ke dashboard...`,
+      });
+      setTimeout(() => {
+        router.push(`/profil/${userFound.role}`);
+      }, 700);
+      return;
     }
+
+    // Jika tidak terdaftar berdasarkan email, gunakan role yang dipilih pengguna
+    setActiveRole(selectedRoleData.slug);
     router.push(`/profil/${selectedRoleData.slug}`);
   };
 
-  const handleGoogleLogin = (): void => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(ROLE_STORAGE_KEY, selectedRoleData.slug);
-      notifyAuthChange();
+  const handleSelectGoogleAccount = (acc: GoogleAccountItem): void => {
+    setShowGoogleModal(false);
+
+    // Cek apakah email Google terdaftar di sistem
+    const existingUser = findUserByEmail(acc.email);
+
+    if (existingUser) {
+      // Kasus A: Sudah terdaftar (baik manual sebelumnya atau via Google)
+      // Langsung arahkan ke role yang terdaftar dan login otomatis!
+      setActiveRole(existingUser.role);
+      setTopAlert({
+        variant: "success",
+        title: "Autentikasi Google Berhasil",
+        message: `Selamat datang kembali, ${existingUser.namaLengkap}! Anda masuk sebagai peran ${existingUser.roleTitle}.`,
+      });
+      setTimeout(() => {
+        router.push(`/profil/${existingUser.role}`);
+      }, 700);
+    } else {
+      // Kasus B: Belum pernah terdaftar sama sekali
+      // Tampilkan banner merah di atas dan arahkan ke registrasi dengan prefilled data
+      setTopAlert({
+        variant: "danger",
+        title: "Akun Google Belum Terdaftar",
+        message: `Akun Google (${acc.email}) belum terdaftar di SAMANGGA. Mengarahkan Anda ke formulir pendaftaran untuk memilih peran...`,
+      });
+
+      setTimeout(() => {
+        const queryParams = new URLSearchParams({
+          email: acc.email,
+          name: acc.name,
+          from: "google",
+          error: "unregistered",
+        });
+        router.push(`/daftar?${queryParams.toString()}`);
+      }, 1200);
     }
-    router.push(`/profil/${selectedRoleData.slug}`);
+  };
+
+  const handleCustomGoogleSubmit = (e: FormEvent): void => {
+    e.preventDefault();
+    if (!customGoogleEmail) return;
+
+    handleSelectGoogleAccount({
+      name: customGoogleName || customGoogleEmail.split("@")[0],
+      email: customGoogleEmail.trim(),
+      avatarText: (customGoogleName || customGoogleEmail)[0].toUpperCase(),
+      avatarBg: "bg-blue-600",
+    });
   };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#273419]">
       <Navbar />
 
+      {topAlert && (
+        <TopAlertBanner
+          variant={topAlert.variant}
+          title={topAlert.title}
+          message={topAlert.message}
+          onClose={() => setTopAlert(null)}
+          secondaryAction={
+            topAlert.variant === "danger"
+              ? {
+                  label: "Daftar Akun Baru",
+                  href: "/daftar",
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {showGoogleModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="google-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200"
+        >
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-black/10">
+            <div className="flex items-start justify-between border-b border-gray-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    fill="#4285F4"
+                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                  />
+                </svg>
+                <div>
+                  <h3 id="google-modal-title" className="text-base font-bold text-gray-900">
+                    Pilih Akun Google
+                  </h3>
+                  <p className="text-xs text-gray-500">untuk melanjutkan ke platform SAMANGGA</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGoogleModal(false)}
+                aria-label="Tutup pemilih akun Google"
+                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4">
+              <form onSubmit={handleCustomGoogleSubmit} className="space-y-3 rounded-2xl bg-gray-50/80 p-4 border border-gray-200">
+                <div>
+                  <label className="block text-xs font-bold text-gray-800 mb-1">
+                    Nama Lengkap Akun Google:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={customGoogleName}
+                    onChange={(e) => setCustomGoogleName(e.target.value)}
+                    placeholder="Contoh: Budi Santoso"
+                    className="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-[#166534] focus:outline-none shadow-2xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-800 mb-1">
+                    Alamat Email Google:
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={customGoogleEmail}
+                    onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                    placeholder="nama@gmail.com"
+                    className="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-[#166534] focus:outline-none shadow-2xs"
+                  />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="submit"
+                    className="flex-1 rounded-xl bg-[#3D5126] py-2.5 text-xs font-bold text-white hover:bg-[#273419] shadow-sm transition-all active:scale-98"
+                  >
+                    Lanjutkan Masuk dengan Google
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowGoogleModal(false)}
+                    className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="grid grid-cols-1 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl lg:grid-cols-12">
-          {/* Kolom Kiri Branding */}
           <div className="relative flex flex-col justify-between overflow-hidden bg-gradient-to-br from-green-700 via-green-800 to-green-950 p-8 text-white sm:p-10 lg:col-span-5">
             <div
               aria-hidden="true"
@@ -148,7 +349,7 @@ export default function LoginPage(): JSX.Element {
               </div>
 
               <p className="mt-3 text-sm leading-relaxed text-emerald-100/90">
-                Platform B2B Rantai Pasok Terpadu & Pasar Sirkular Mangga Indramayu.
+                Platform B2B Rantai Pasok Terpadu &amp; Pasar Sirkular Mangga Indramayu.
               </p>
             </div>
 
@@ -194,7 +395,6 @@ export default function LoginPage(): JSX.Element {
             </div>
           </div>
 
-          {/* Kolom Formulir Masuk */}
           <div className="flex flex-col justify-center p-6 sm:p-10 lg:col-span-7">
             <div>
               <div className="mb-5 inline-flex items-center rounded-full border border-gray-200 bg-white p-1 shadow-xs">
@@ -270,7 +470,6 @@ export default function LoginPage(): JSX.Element {
                     })}
                   </div>
 
-                  {/* Keterangan Ringkas Mobile */}
                   <div className="mt-2 rounded-xl border border-emerald-100 bg-emerald-50/70 p-2.5 text-xs text-[#273419]">
                     <div className="flex items-center justify-between font-bold text-green-800">
                       <span className="flex items-center gap-1">
@@ -346,7 +545,7 @@ export default function LoginPage(): JSX.Element {
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <form onSubmit={handleManualLogin} className="mt-6 space-y-4">
                 <div>
                   <label htmlFor="identifier" className="block text-xs font-bold text-gray-800">
                     Nomor WhatsApp atau Alamat Email <span className="text-red-500">*</span>
@@ -444,7 +643,7 @@ export default function LoginPage(): JSX.Element {
               <div>
                 <button
                   type="button"
-                  onClick={handleGoogleLogin}
+                  onClick={() => setShowGoogleModal(true)}
                   className="w-full inline-flex min-h-12 items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-4 text-sm font-bold text-gray-700 shadow-2xs transition-all hover:bg-gray-50 hover:border-gray-400 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126]"
                 >
                   <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
@@ -487,5 +686,22 @@ export default function LoginPage(): JSX.Element {
 
       <SiteFooter />
     </div>
+  );
+}
+
+export default function LoginPage(): JSX.Element {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
+          <div className="text-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#3D5126] border-t-transparent mx-auto" />
+            <p className="mt-3 text-xs font-semibold text-gray-600">Memuat halaman masuk...</p>
+          </div>
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

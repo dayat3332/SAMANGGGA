@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -92,7 +91,6 @@ export default function SetorLimbah(): JSX.Element {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
-            {/* Kiri: Preview Kartu di Pasar Sirkular */}
             <aside className="lg:col-span-5">
               <div className="sticky top-20 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-md">
                 <div className="relative flex h-48 w-full items-center justify-center bg-gray-100 overflow-hidden">
@@ -127,7 +125,6 @@ export default function SetorLimbah(): JSX.Element {
               </div>
             </aside>
 
-            {/* Kanan: Form Setor */}
             <section className="lg:col-span-7">
               <form
                 onSubmit={handleSubmit}

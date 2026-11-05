@@ -1,8 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent, JSX } from "react";
 import {
   ArrowRightIcon,
@@ -10,6 +9,7 @@ import {
   BoxesIcon,
   ChartLineIcon,
   CheckBadgeIcon,
+  CheckIcon,
   ClockRotateLeftIcon,
   CreditCardIcon,
   EditIcon,
@@ -25,6 +25,8 @@ import {
   TruckIcon,
   UserGearIcon,
   UsersIcon,
+  WhatsAppIcon,
+  XMarkIcon,
 } from "@/components/ui/Icons";
 import {
   DEFAULT_PROFILES,
@@ -43,6 +45,13 @@ import {
 } from "@/data/profil";
 import { formatNumber, formatRupiah } from "@/lib/format";
 import { notifyAuthChange } from "@/components/layout/SiteNavbar";
+import {
+  getRegisteredUsers,
+  updateUserVerification,
+  resubmitMitraPhoto,
+  subscribeAuth,
+  type RegisteredUser,
+} from "@/lib/auth";
 import type {
   DetailTransaksi,
   JenisKeuangan,
@@ -87,6 +96,8 @@ function getRoleIcon(slug: RoleSlug, className = "h-5 w-5"): JSX.Element {
 
 function getTabSidebarIcon(tabId: CrudTabId, className = "h-4 w-4"): JSX.Element {
   switch (tabId) {
+    case "verifikasi-mitra":
+      return <ShieldCheckIcon className={className} />;
     case "produk":
       return <BoxesIcon className={className} />;
     case "limbah":
@@ -261,10 +272,10 @@ const ROLE_NOTIFICATIONS: Record<
     targetTab: "transaksi",
   },
   admin: {
-    title: "5 Transaksi Jual-Beli lintas role & 3 Limbah Sirkular aktif di platform",
-    time: "Monitoring Aktivitas Sistem Platform SAMANGGA",
-    buttonLabel: "Kelola Semua Data",
-    targetTab: "transaksi",
+    title: "Pendaftaran mitra sirkular & moderasi data ekosistem SAMANGGA",
+    time: "Verifikasi Berkas Mitra & Monitoring Platform",
+    buttonLabel: "Verifikasi Mitra",
+    targetTab: "verifikasi-mitra",
   },
 };
 
@@ -300,6 +311,7 @@ function getStatusBadge(status: string): string {
 }
 
 type CrudTabId =
+  | "verifikasi-mitra"
   | "produk"
   | "transaksi"
   | "pembayaran"
@@ -349,6 +361,7 @@ const ROLE_TABS: Record<RoleSlug, readonly TabOption[]> = {
     { id: "profil", label: "Profil", tableName: "Profil" },
   ],
   admin: [
+    { id: "verifikasi-mitra", label: "Verifikasi Mitra", tableName: "Verifikasi Mitra" },
     { id: "pengguna", label: "Pengguna", tableName: "Pengguna" },
     { id: "produk", label: "Produk", tableName: "Produk" },
     { id: "limbah", label: "Limbah", tableName: "Limbah" },
@@ -418,6 +431,168 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   const getUserName = (idUser: number): string => {
     const u = penggunaList.find((x) => x.id_user === idUser);
     return u ? u.nama_lengkap : `User #${idUser}`;
+  };
+
+  // Data Pengguna Terdaftar & Verifikasi Kemitraan
+  const [registeredUsersList, setRegisteredUsersList] = useState<RegisteredUser[]>(() =>
+    getRegisteredUsers(),
+  );
+
+  useEffect(() => {
+    const unsub = subscribeAuth(() => {
+      setRegisteredUsersList(getRegisteredUsers());
+    });
+    return unsub;
+  }, []);
+
+  // State Verifikasi Mitra untuk Admin
+  const [inspectPhoto, setInspectPhoto] = useState<{
+    url: string;
+    title: string;
+    subtitle?: string;
+  } | null>(null);
+  const [rejectModalTarget, setRejectModalTarget] = useState<RegisteredUser | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>("");
+  const [mitraFilterStatus, setMitraFilterStatus] = useState<string>("Semua");
+  const [mitraSearchQuery, setMitraSearchQuery] = useState<string>("");
+
+  // State untuk Mitra saat kirim ulang foto berkas
+  const [activeMitraTestId, setActiveMitraTestId] = useState<string | null>(null);
+  const [isResubmitModalOpen, setIsResubmitModalOpen] = useState<boolean>(false);
+  const [resubmitPreview, setResubmitPreview] = useState<string | null>(null);
+  const [resubmitChosenName, setResubmitChosenName] = useState<string>("");
+
+  const allMitraUsers = useMemo(() => {
+    return registeredUsersList.filter((u) => u.role === "mitra");
+  }, [registeredUsersList]);
+
+  const pendingMitraCount = useMemo(() => {
+    return allMitraUsers.filter((u) => u.statusVerifikasi === "Menunggu").length;
+  }, [allMitraUsers]);
+
+  const verifiedMitraCount = useMemo(() => {
+    return allMitraUsers.filter((u) => u.statusVerifikasi === "Terverifikasi").length;
+  }, [allMitraUsers]);
+
+  const rejectedMitraCount = useMemo(() => {
+    return allMitraUsers.filter((u) => u.statusVerifikasi === "Ditolak").length;
+  }, [allMitraUsers]);
+
+  const filteredMitraUsers = useMemo(() => {
+    return allMitraUsers.filter((m) => {
+      const matchesFilter =
+        mitraFilterStatus === "Semua" || m.statusVerifikasi === mitraFilterStatus;
+      if (!matchesFilter) return false;
+      if (!mitraSearchQuery.trim()) return true;
+      const q = mitraSearchQuery.toLowerCase();
+      const instansi = (m.extraData?.namaInstansi as string) || "";
+      return (
+        m.namaLengkap.toLowerCase().includes(q) ||
+        instansi.toLowerCase().includes(q) ||
+        m.email.toLowerCase().includes(q) ||
+        m.nomorWhatsapp.includes(q)
+      );
+    });
+  }, [allMitraUsers, mitraFilterStatus, mitraSearchQuery]);
+
+  const currentMitraUser = useMemo(() => {
+    if (currentRole !== "mitra") return null;
+    if (allMitraUsers.length === 0) return null;
+    if (activeMitraTestId) {
+      const found = allMitraUsers.find((m) => m.id === activeMitraTestId);
+      if (found) return found;
+    }
+    const pendingOrRejected = allMitraUsers.find(
+      (m) => m.statusVerifikasi === "Menunggu" || m.statusVerifikasi === "Ditolak",
+    );
+    if (pendingOrRejected) return pendingOrRejected;
+
+    return (
+      allMitraUsers.find((m) => m.email.toLowerCase() === profile.email.toLowerCase()) ??
+      allMitraUsers[0]
+    );
+  }, [currentRole, allMitraUsers, profile.email, activeMitraTestId]);
+
+  const handleAccMitra = (mitra: RegisteredUser): void => {
+    const updated = updateUserVerification(mitra.id, "Terverifikasi");
+    if (updated) {
+      setRegisteredUsersList(getRegisteredUsers());
+      showToast(
+        `✓ Kemitraan ${(mitra.extraData?.namaInstansi as string) || mitra.namaLengkap} berhasil disetujui (ACC)!`,
+      );
+      addLog(
+        "VERIFIKASI_MITRA_ACC",
+        "/api/admin/mitra/acc",
+        `Admin menyetujui kemitraan ${mitra.namaLengkap} (${mitra.id})`,
+        "Info",
+      );
+    }
+  };
+
+  const openRejectModal = (mitra: RegisteredUser): void => {
+    setRejectModalTarget(mitra);
+    setRejectReason(
+      mitra.alasanPenolakan ||
+        "Foto dokumen atau lahan fasilitas tidak jelas / buram. Mohon unggah ulang foto yang jelas dan terbaca.",
+    );
+  };
+
+  const closeRejectModal = (): void => {
+    setRejectModalTarget(null);
+    setRejectReason("");
+  };
+
+  const handleConfirmRejectMitra = (): void => {
+    if (!rejectModalTarget) return;
+    const reason =
+      rejectReason.trim() ||
+      "Foto dokumen atau fasilitas tidak memenuhi syarat / tidak terbaca jelas";
+    const updated = updateUserVerification(rejectModalTarget.id, "Ditolak", reason);
+    if (updated) {
+      setRegisteredUsersList(getRegisteredUsers());
+      showToast(
+        `✕ Kemitraan ${rejectModalTarget.namaLengkap} ditolak. Catatan dikirimkan ke mitra.`,
+      );
+      addLog(
+        "VERIFIKASI_MITRA_TOLAK",
+        "/api/admin/mitra/reject",
+        `Admin menolak dokumen kemitraan ${rejectModalTarget.namaLengkap} (${rejectModalTarget.id}): ${reason}`,
+        "Warning",
+      );
+      closeRejectModal();
+    }
+  };
+
+
+  const handleResubmitFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setResubmitPreview(reader.result as string);
+        setResubmitChosenName(file.name);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleConfirmResubmitMitra = (): void => {
+    if (!currentMitraUser || !resubmitPreview) return;
+    const photoName = resubmitChosenName || "berkas-persyaratan-mitra.jpg";
+    const updated = resubmitMitraPhoto(currentMitraUser.id, resubmitPreview, photoName);
+    if (updated) {
+      setRegisteredUsersList(getRegisteredUsers());
+      setIsResubmitModalOpen(false);
+      setResubmitPreview(null);
+      setResubmitChosenName("");
+      showToast("✓ Berkas perbaikan berhasil dikirimkan ulang! Menunggu verifikasi admin.");
+      addLog(
+        "MITRA_KIRIM_ULANG_DOKUMEN",
+        "/api/mitra/resubmit",
+        `Mitra ${currentMitraUser.namaLengkap} mengirim ulang berkas verifikasi: ${photoName}`,
+        "Info",
+      );
+    }
   };
 
   // Produk
@@ -672,6 +847,10 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     e.preventDefault();
     const now = new Date().toISOString().replace("T", " ").slice(0, 19);
     const selectedProd = produkList.find((p) => p.id_produk === formTransaksi.id_produk) ?? produkList[0];
+    if (!selectedProd) {
+      showToast("Belum ada data produk tersedia untuk transaksi.");
+      return;
+    }
     const total = selectedProd.harga * formTransaksi.jumlah_produk;
 
     if (editingTransaksiId !== null) {
@@ -1199,13 +1378,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-gray-900">
       <div className="mx-auto flex min-h-screen w-full flex-col lg:flex-row">
-        {/* Sidebar Kiri (gaya panel admin putih) */}
         <aside
           aria-label="Navbar Kiri Dashboard CRUD"
           className="flex w-full shrink-0 flex-col justify-between border-b border-gray-200 bg-white px-4 py-5 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:overflow-y-auto lg:border-b-0 lg:border-r"
         >
           <div className="space-y-6">
-            {/* Brand */}
             <div className="flex items-center justify-between px-1">
               <Link href="/" className="group inline-flex items-center gap-2.5">
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#95A87A]/20 p-1.5 ring-1 ring-[#95A87A]/30">
@@ -1222,7 +1399,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
               </span>
             </div>
 
-            {/* Info Akun Pengguna */}
             <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
               <div className="flex items-center justify-between text-[10px] font-semibold text-gray-500">
                 <span>{profile.peranErd.toUpperCase()}</span>
@@ -1263,6 +1439,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
 
                 {availableTabs.map((tab) => {
                   const isAct = activeTab === tab.id;
+                  const isVerifTab = tab.id === "verifikasi-mitra";
                   return (
                     <button
                       key={tab.id}
@@ -1271,16 +1448,23 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         setActiveTab(tab.id);
                         setSearchQuery("");
                       }}
-                      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${
+                      className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${
                         isAct
                           ? "bg-[#95A87A]/25 text-[#273419] font-bold shadow-xs"
                           : "text-gray-600 hover:bg-gray-50 hover:text-[#273419]"
                       }`}
                     >
-                      <span className={isAct ? "text-[#3D5126]" : "text-gray-400"}>
-                        {getTabSidebarIcon(tab.id, "h-4 w-4 shrink-0")}
-                      </span>
-                      <span className="truncate">{tab.label}</span>
+                      <div className="flex items-center gap-3 truncate">
+                        <span className={isAct ? "text-[#3D5126]" : "text-gray-400"}>
+                          {getTabSidebarIcon(tab.id, "h-4 w-4 shrink-0")}
+                        </span>
+                        <span className="truncate">{tab.label}</span>
+                      </div>
+                      {isVerifTab && pendingMitraCount > 0 && (
+                        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-extrabold text-white shadow-xs">
+                          {pendingMitraCount}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -1308,7 +1492,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
           </div>
 
           <div className="mt-6 space-y-4">
-            {/* Kartu promo (gaya "Upgrade to Pro") */}
             <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#95A87A]/20 via-[#F8FAFC] to-[#95A87A]/25 p-4 ring-1 ring-[#95A87A]/30">
               <div
                 aria-hidden="true"
@@ -1338,7 +1521,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
               </Link>
             </div>
 
-            {/* Profil singkat & logout */}
             <div className="flex items-center gap-3 border-t border-gray-100 px-1 pt-4">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#95A87A]/30 text-xs font-bold text-[#273419] ring-1 ring-[#95A87A]/40">
                 {profile.nama_lengkap
@@ -1367,7 +1549,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
           </div>
         </aside>
 
-        {/* Area Konten Utama */}
         <div className="min-w-0 flex-1 space-y-6 px-4 pb-10 sm:px-6 lg:px-8">
           <header className="sticky top-0 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
             <div className="inline-flex min-w-0 items-center gap-2.5 rounded-lg bg-gray-50 px-3.5 py-2 ring-1 ring-gray-200">
@@ -1435,10 +1616,153 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
             </div>
           )}
 
+          {currentRole === "mitra" && currentMitraUser && (
+            <div className="space-y-3">
+              {currentMitraUser.statusVerifikasi === "Menunggu" && (
+                <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-100/70 to-amber-50 p-4 sm:p-5 shadow-sm text-amber-950">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white font-bold text-sm shadow-xs">
+                        ⏳
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                            Menunggu Verifikasi Admin
+                          </span>
+                          <h2 className="text-sm font-extrabold text-amber-950">
+                            Berkas Pendaftaran Kemitraan Sedang Ditinjau
+                          </h2>
+                        </div>
+                        <p className="mt-1 text-xs text-amber-900 leading-relaxed">
+                          Foto bukti lahan/fasilitas dan berkas kemitraan <strong>{(currentMitraUser.extraData?.namaInstansi as string) || currentMitraUser.namaLengkap}</strong> sedang dalam antrean verifikasi oleh Admin SAMANGGA. Akses penuh operasional logistik sirkular akan otomatis aktif setelah disetujui.
+                        </p>
+                        {currentMitraUser.fotoPersyaratanName && (
+                          <p className="mt-1 text-[11px] font-mono text-amber-800">
+                            📎 Berkas terlampir: {currentMitraUser.fotoPersyaratanName}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {currentMitraUser.fotoPersyaratanUrl && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setInspectPhoto({
+                            url: currentMitraUser.fotoPersyaratanUrl!,
+                            title: (currentMitraUser.extraData?.namaInstansi as string) || currentMitraUser.namaLengkap,
+                            subtitle: currentMitraUser.fotoPersyaratanName || "Berkas Foto Terlampir",
+                          })
+                        }
+                        className="shrink-0 rounded-xl border border-amber-400 bg-white px-3.5 py-2 text-xs font-bold text-amber-900 shadow-xs hover:bg-amber-50 active:scale-95 transition-all"
+                      >
+                        🔍 Lihat Foto Saya
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {currentMitraUser.statusVerifikasi === "Ditolak" && (
+                <div className="rounded-2xl border border-red-300 bg-gradient-to-r from-red-50 via-rose-100/90 to-red-50 p-4 sm:p-5 shadow-sm text-red-950 space-y-3">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white font-bold text-sm shadow-xs">
+                        🚨
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="rounded-md bg-red-600 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                            Verifikasi Ditolak / Kirim Ulang
+                          </span>
+                          <h2 className="text-sm font-extrabold text-red-950">
+                            Dokumen / Foto Kemitraan Perlu Dikirim Ulang
+                          </h2>
+                        </div>
+                        <p className="mt-1 text-xs text-red-800 leading-relaxed">
+                          Admin telah memeriksa berkas pendaftaran Anda dan meminta untuk melakukan unggah ulang foto dokumen atau fasilitas lahan yang lebih jelas.
+                        </p>
+                        <div className="mt-2.5 rounded-xl border border-red-200 bg-white/95 p-3 text-xs text-red-900 shadow-2xs">
+                          <p className="font-extrabold text-red-950 flex items-center gap-1.5">
+                            <span>💬 Catatan & Instruksi Admin:</span>
+                          </p>
+                          <p className="mt-1 font-medium italic">
+                            &ldquo;{currentMitraUser.alasanPenolakan || "Foto atau dokumen kemitraan tidak terbaca jelas. Mohon kirimkan ulang foto dengan resolusi tinggi."}&rdquo;
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResubmitPreview(null);
+                        setResubmitChosenName("");
+                        setIsResubmitModalOpen(true);
+                      }}
+                      className="shrink-0 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-red-700 active:scale-95 transition-all"
+                    >
+                      📷 Kirim Ulang Foto Berkas
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {allMitraUsers.length > 1 && (
+                <div className="flex items-center gap-2 flex-wrap text-xs bg-gray-50 px-3 py-2 rounded-xl border border-gray-200">
+                  <span className="text-gray-500 font-semibold">Ganti Akun Uji Mitra:</span>
+                  {allMitraUsers.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setActiveMitraTestId(m.id)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                        currentMitraUser?.id === m.id
+                          ? m.statusVerifikasi === "Menunggu"
+                            ? "bg-amber-500 text-white"
+                            : m.statusVerifikasi === "Ditolak"
+                            ? "bg-red-600 text-white"
+                            : "bg-[#3D5126] text-white"
+                          : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      {(m.extraData?.namaInstansi as string) || m.namaLengkap} ({m.statusVerifikasi})
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {currentRole === "admin" && pendingMitraCount > 0 && activeTab !== "verifikasi-mitra" && (
+            <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-100/70 to-amber-50 p-4 shadow-sm text-amber-950">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white font-bold text-xs shadow-xs">
+                    ⏳
+                  </span>
+                  <div>
+                    <h2 className="text-xs font-bold text-amber-900">
+                      Terdapat {pendingMitraCount} calon mitra baru menunggu verifikasi dokumen & foto lahan!
+                    </h2>
+                    <p className="text-[11px] text-amber-800">
+                      Buka menu Verifikasi Mitra untuk memeriksa kelayakan berkas foto, menyetujui (ACC), atau meminta kirim ulang.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("verifikasi-mitra")}
+                  className="shrink-0 rounded-xl bg-[#3D5126] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#273419] active:scale-95 transition-all"
+                >
+                  Buka Verifikasi Mitra →
+                </button>
+              </div>
+            </div>
+          )}
+
           
           {activeTab === "home" && (
             <section aria-label="Ringkasan Dashboard Ekosistem" className="space-y-6">
-              {/* Judul Halaman */}
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Dashboard</h1>
@@ -1448,7 +1772,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                 </div>
               </div>
 
-              {/* Baris Kartu Ringkasan Penjualan & Pembelian Akun */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                   <div className="flex items-start justify-between">
@@ -1630,7 +1953,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
 
                 
                 <div className="space-y-6 lg:col-span-7">
-                  {/* Notification Card (Dengan Tombol Kuning & Lingkaran Konsentris di Kanan Bawah) */}
                   <div>
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold text-gray-900">Notification</h3>
@@ -1682,7 +2004,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                     </div>
                   </div>
 
-                  {/* Data Spesifik Hasil Konsumen / Aktivitas Jual & Beli Role */}
                   <div>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
@@ -1804,7 +2125,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         })}
                       </div>
 
-                      {/* Pintasan Bawah ke Halaman Biasa Buat Beli */}
                       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-2.5">
                         <span className="text-xs font-semibold text-gray-900">
                           Ingin melakukan transaksi pembelian baru di halaman biasa?
@@ -1909,7 +2229,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
           
           {activeTab !== "home" && (
             <main id="crud-table-workspace" className="space-y-5">
-              {/* Header Tabel & Breadcrumb */}
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
                 <div>
                   <button
@@ -1927,7 +2246,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   </p>
                 </div>
 
-                {/* Tombol Aksi Utama */}
                 {activeTab !== "profil" && (
                   <div className="flex items-center gap-2">
                     {activeTab === "produk" && (
@@ -1988,11 +2306,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                 )}
               </div>
 
-              {/* Pill Tab Switcher & Pencarian */}
               <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
                 <div className="flex flex-wrap gap-2">
                   {availableTabs.map((tab) => {
                     const isAct = activeTab === tab.id;
+                    const isVerifTab = tab.id === "verifikasi-mitra";
                     return (
                       <button
                         key={tab.id}
@@ -2001,19 +2319,28 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           setActiveTab(tab.id);
                           setSearchQuery("");
                         }}
-                        className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
                           isAct
                             ? "border-[#3D5126] bg-[#3D5126] text-white shadow-xs"
                             : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
                         }`}
                       >
-                        {tab.label}
+                        <span>{tab.label}</span>
+                        {isVerifTab && pendingMitraCount > 0 && (
+                          <span
+                            className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${
+                              isAct ? "bg-amber-400 text-amber-950" : "bg-amber-500 text-white"
+                            }`}
+                          >
+                            {pendingMitraCount}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
                 </div>
 
-                {activeTab !== "profil" && (
+                {activeTab !== "profil" && activeTab !== "verifikasi-mitra" && (
                   <div className="relative w-full lg:max-w-xs">
                     <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
                     <input
@@ -2026,6 +2353,297 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   </div>
                 )}
               </div>
+
+            {activeTab === "verifikasi-mitra" && (
+              <div className="space-y-5">
+                <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-[#3D5126]/10 px-3 py-1 text-xs font-bold text-[#3D5126]">
+                        <ShieldCheckIcon className="h-4 w-4" />
+                        Pusat Moderasi Berkas & Kemitraan Sirkular
+                      </div>
+                      <h2 className="mt-2 text-lg font-extrabold text-gray-900">
+                        Verifikasi Mitra Bio-Refinery & Pengolah Limbah
+                      </h2>
+                      <p className="mt-0.5 text-xs text-gray-500 max-w-2xl">
+                        Sesuai standar operasional SAMANGGA, pendaftaran Mitra mewajibkan upload foto lahan/fasilitas atau dokumen MoU. Calon mitra Supplier, UMKM, dan Konsumen langsung aktif tanpa upload dokumen. Admin memvalidasi kejelasan foto sebelum memberikan persetujuan (ACC).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 pt-1">
+                    <div className="rounded-xl border border-gray-100 bg-gray-50 p-3.5">
+                      <p className="text-[11px] font-medium text-gray-500">Total Mitra Terdaftar</p>
+                      <p className="mt-1 text-xl font-extrabold text-gray-900">{allMitraUsers.length}</p>
+                    </div>
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5">
+                      <p className="text-[11px] font-bold text-amber-700">⏳ Menunggu Verifikasi</p>
+                      <p className="mt-1 text-xl font-extrabold text-amber-900">{pendingMitraCount}</p>
+                    </div>
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5">
+                      <p className="text-[11px] font-bold text-emerald-700">✓ Terverifikasi (ACC)</p>
+                      <p className="mt-1 text-xl font-extrabold text-emerald-900">{verifiedMitraCount}</p>
+                    </div>
+                    <div className="rounded-xl border border-red-200 bg-red-50/70 p-3.5">
+                      <p className="text-[11px] font-bold text-red-700">✕ Ditolak / Perlu Kirim Ulang</p>
+                      <p className="mt-1 text-xl font-extrabold text-red-900">{rejectedMitraCount}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {(["Semua", "Menunggu", "Terverifikasi", "Ditolak"] as const).map((filter) => {
+                        const count =
+                          filter === "Semua"
+                            ? allMitraUsers.length
+                            : filter === "Menunggu"
+                            ? pendingMitraCount
+                            : filter === "Terverifikasi"
+                            ? verifiedMitraCount
+                            : rejectedMitraCount;
+                        const isSelected = mitraFilterStatus === filter;
+                        return (
+                          <button
+                            key={filter}
+                            type="button"
+                            onClick={() => setMitraFilterStatus(filter)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                              isSelected
+                                ? filter === "Menunggu"
+                                  ? "bg-amber-500 text-white shadow-xs"
+                                  : filter === "Ditolak"
+                                  ? "bg-red-600 text-white shadow-xs"
+                                  : filter === "Terverifikasi"
+                                  ? "bg-emerald-600 text-white shadow-xs"
+                                  : "bg-[#3D5126] text-white shadow-xs"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            {filter} ({count})
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="relative w-full sm:w-64">
+                      <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="search"
+                        value={mitraSearchQuery}
+                        onChange={(e) => setMitraSearchQuery(e.target.value)}
+                        placeholder="Cari instansi, PIC, kontak..."
+                        className="h-9 w-full rounded-xl border border-gray-200 bg-gray-50 pl-8 pr-3 text-xs placeholder:text-gray-400 focus:border-[#3D5126] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#95A87A]/30"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {filteredMitraUsers.length === 0 ? (
+                    <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center">
+                      <p className="text-3xl">📭</p>
+                      <h3 className="mt-2 text-sm font-bold text-gray-900">Tidak ada pendaftar mitra</h3>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Tidak ada calon mitra dengan status filter &ldquo;{mitraFilterStatus}&rdquo;.
+                      </p>
+                    </div>
+                  ) : (
+                    filteredMitraUsers.map((m) => (
+                      <div
+                        key={m.id}
+                        className={`rounded-2xl border bg-white p-5 shadow-sm transition-all ${
+                          m.statusVerifikasi === "Menunggu"
+                            ? "border-amber-300 ring-2 ring-amber-100"
+                            : m.statusVerifikasi === "Ditolak"
+                            ? "border-red-200"
+                            : "border-gray-200"
+                        }`}
+                      >
+                        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
+                          <div className="flex-1 space-y-3">
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#3D5126]/10 text-[#3D5126]">
+                                <RecycleIcon className="h-6 w-6" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-mono text-[10px] font-bold text-gray-400">
+                                    #{m.id}
+                                  </span>
+                                  <span
+                                    className={`rounded-md border px-2.5 py-0.5 text-[10px] font-extrabold ${
+                                      m.statusVerifikasi === "Terverifikasi"
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : m.statusVerifikasi === "Ditolak"
+                                        ? "bg-red-50 text-red-700 border-red-200"
+                                        : "bg-amber-50 text-amber-800 border-amber-300"
+                                    }`}
+                                  >
+                                    {m.statusVerifikasi === "Menunggu"
+                                      ? "⏳ Menunggu Verifikasi"
+                                      : m.statusVerifikasi}
+                                  </span>
+                                  {m.fromGoogle && (
+                                    <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 border border-blue-200">
+                                      Google Account
+                                    </span>
+                                  )}
+                                  <span className="text-[11px] text-gray-400">
+                                    Daftar: {m.registeredAt}
+                                  </span>
+                                </div>
+                                <h3 className="mt-1 text-base font-extrabold text-gray-900">
+                                  {(m.extraData?.namaInstansi as string) || m.namaLengkap}
+                                </h3>
+                                <p className="text-xs text-gray-600">
+                                  Penanggung Jawab: <span className="font-bold text-gray-800">{m.namaLengkap}</span>
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <span className="text-gray-400">✉️</span>
+                                <a
+                                  href={`mailto:${m.email}`}
+                                  className="text-[#3D5126] hover:underline font-medium truncate"
+                                >
+                                  {m.email}
+                                </a>
+                              </div>
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <WhatsAppIcon className="h-3.5 w-3.5 text-emerald-600" />
+                                <a
+                                  href={`https://wa.me/${m.nomorWhatsapp.replace(/^0/, "62")}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-emerald-700 hover:underline font-bold"
+                                >
+                                  {m.nomorWhatsapp} (Hubungi PIC)
+                                </a>
+                              </div>
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <span className="text-gray-400">⚖️</span>
+                                <span>
+                                  Kapasitas:{" "}
+                                  <strong>
+                                    {m.extraData?.kapasitasTampung
+                                      ? `${formatNumber(Number(m.extraData.kapasitasTampung))} Kg/bulan`
+                                      : "1.500 Kg/bulan"}
+                                  </strong>
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <span className="text-gray-400">📍</span>
+                                <span className="truncate">
+                                  Area:{" "}
+                                  <strong>
+                                    {(m.extraData?.jangkauanArea as string) || "Kabupaten Indramayu"}
+                                  </strong>
+                                </span>
+                              </div>
+                            </div>
+
+                            {m.statusVerifikasi === "Ditolak" && m.alasanPenolakan && (
+                              <div className="rounded-xl border border-red-200 bg-red-50/80 p-3 text-xs text-red-950">
+                                <p className="font-bold flex items-center gap-1.5 text-red-900">
+                                  <span>⚠️ Catatan Penolakan Admin:</span>
+                                </p>
+                                <p className="mt-1 font-medium italic text-red-900">
+                                  &ldquo;{m.alasanPenolakan}&rdquo;
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end justify-between gap-4 border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0 lg:pl-5 shrink-0">
+                            <div className="w-full sm:w-auto">
+                              <p className="text-[11px] font-bold text-gray-500 mb-1.5">
+                                Bukti Foto Fasilitas / Lahan / MoU:
+                              </p>
+                              {m.fotoPersyaratanUrl ? (
+                                <div className="flex items-center gap-3">
+                                  <div
+                                    onClick={() =>
+                                      setInspectPhoto({
+                                        url: m.fotoPersyaratanUrl!,
+                                        title: (m.extraData?.namaInstansi as string) || m.namaLengkap,
+                                        subtitle: m.fotoPersyaratanName || "Berkas Foto Persyaratan Mitra",
+                                      })
+                                    }
+                                    className="group relative h-20 w-28 cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-xs transition-transform hover:scale-105"
+                                  >
+                                    <img
+                                      src={m.fotoPersyaratanUrl}
+                                      alt="Bukti foto persyaratan"
+                                      className="h-full w-full object-cover transition-all group-hover:brightness-95"
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-bold">
+                                      🔍 Periksa
+                                    </div>
+                                  </div>
+                                  <div className="text-xs">
+                                    <p className="font-mono text-[11px] font-semibold text-gray-700 truncate max-w-[160px]">
+                                      {m.fotoPersyaratanName || "foto-persyaratan.jpg"}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setInspectPhoto({
+                                          url: m.fotoPersyaratanUrl!,
+                                          title: (m.extraData?.namaInstansi as string) || m.namaLengkap,
+                                          subtitle: m.fotoPersyaratanName || "Berkas Foto Persyaratan Mitra",
+                                        })
+                                      }
+                                      className="mt-1 text-[11px] font-bold text-[#3D5126] hover:underline"
+                                    >
+                                      Periksa Resolusi Penuh →
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-3 text-center text-xs text-gray-400">
+                                  Tidak ada berkas terlampir
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                              {m.statusVerifikasi !== "Terverifikasi" && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAccMitra(m)}
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95 transition-all"
+                                >
+                                  ✓ ACC / Setujui
+                                </button>
+                              )}
+
+                              {m.statusVerifikasi !== "Ditolak" && (
+                                <button
+                                  type="button"
+                                  onClick={() => openRejectModal(m)}
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-700 hover:bg-red-100 active:scale-95 transition-all"
+                                >
+                                  ✕ Tolak (Kirim Ulang)
+                                </button>
+                              )}
+
+                              {m.statusVerifikasi === "Terverifikasi" && (
+                                <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700">
+                                  <CheckBadgeIcon className="h-4 w-4" /> Kemitraan Aktif
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
 
             
             {activeTab === "produk" && (
@@ -2600,7 +3218,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               ))}
                             </select>
 
-                            {/* Preview Produk Terpilih */}
                             {(() => {
                               const selectedProd = produkList.find(
                                 (p) => p.id_produk === formTransaksi.id_produk,
@@ -3815,6 +4432,305 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
               </div>
             )}
           </main>
+        )}
+
+        {inspectPhoto && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs animate-in fade-in"
+            onClick={() => setInspectPhoto(null)}
+          >
+            <div
+              className="relative max-h-[90vh] max-w-3xl w-full overflow-hidden rounded-2xl bg-white shadow-2xl border border-gray-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-5 py-3.5">
+                <div>
+                  <h3 className="text-sm font-extrabold text-gray-900">{inspectPhoto.title}</h3>
+                  {inspectPhoto.subtitle && (
+                    <p className="text-xs font-mono text-gray-500">{inspectPhoto.subtitle}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setInspectPhoto(null)}
+                  className="rounded-full p-1.5 text-gray-500 hover:bg-gray-200 hover:text-gray-800"
+                  aria-label="Tutup Pratinjau Foto"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="max-h-[70vh] overflow-auto p-4 bg-gray-900/5 flex items-center justify-center">
+                <img
+                  src={inspectPhoto.url}
+                  alt={inspectPhoto.title}
+                  className="max-h-[65vh] w-auto max-w-full rounded-xl object-contain shadow-lg border border-gray-200"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-gray-100 bg-gray-50 px-5 py-3 text-xs text-gray-600">
+                <span className="text-[11px] text-gray-500">
+                  Periksa kejernihan foto lahan/fasilitas dan keterbacaan teks berkas MoU kemitraan.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setInspectPhoto(null)}
+                  className="rounded-xl bg-[#3D5126] px-4 py-2 font-bold text-white hover:bg-[#273419] transition-all"
+                >
+                  Tutup Tampilan
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {rejectModalTarget && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-xs animate-in fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) closeRejectModal();
+            }}
+          >
+            <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-gray-200 space-y-4">
+              <div className="flex items-start justify-between border-b border-gray-100 pb-3">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-0.5 text-[10px] font-extrabold text-red-700">
+                    ✕ Tolak & Minta Berkas Ulang
+                  </span>
+                  <h3 className="mt-1.5 text-base font-extrabold text-gray-900">
+                    Keterangan Penolakan Dokumen Mitra
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Mitra: <strong>{(rejectModalTarget.extraData?.namaInstansi as string) || rejectModalTarget.namaLengkap}</strong>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeRejectModal}
+                  className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-gray-700">
+                  Pilih Alasan Cepat (Template):
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    "Foto buram / tidak terbaca dengan jelas",
+                    "Foto fasilitas / lahan tidak sesuai kriteria bio-refinery",
+                    "Dokumen MoU kemitraan belum dibubuhi tanda tangan/stempel",
+                    "Kapasitas atau jangkauan operasional belum memenuhi standar",
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setRejectReason(preset)}
+                      className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all text-left ${
+                        rejectReason === preset
+                          ? "border-red-500 bg-red-50 text-red-700 font-bold ring-1 ring-red-400"
+                          : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Keterangan Lengkap untuk Mitra: *
+                  </label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder="Contoh: Foto dokumen kerja sama buram pada bagian pasal kesepakatan. Mohon unggah ulang foto yang jelas dengan pencahayaan terang..."
+                    className="w-full rounded-xl border border-gray-200 p-3 text-xs placeholder:text-gray-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+                  />
+                </div>
+
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Catatan ini akan otomatis muncul pada dashboard akun mitra bersangkutan beserta formulir untuk mengirim ulang berkas perbaikan.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-gray-100 pt-3">
+                <button
+                  type="button"
+                  onClick={closeRejectModal}
+                  className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmRejectMitra}
+                  disabled={!rejectReason.trim()}
+                  className="rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-red-700 disabled:opacity-50 active:scale-95 transition-all"
+                >
+                  Simpan & Kirim Penolakan
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isResubmitModalOpen && currentMitraUser && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-xs animate-in fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsResubmitModalOpen(false);
+            }}
+          >
+            <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-gray-200 space-y-4">
+              <div className="flex items-start justify-between border-b border-gray-100 pb-3">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-0.5 text-[10px] font-extrabold text-red-700">
+                    Perbaikan Dokumen Kemitraan
+                  </span>
+                  <h3 className="mt-1.5 text-base font-extrabold text-gray-900">
+                    Kirim Ulang Foto Berkas Verifikasi
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Unggah foto dokumen MoU atau fasilitas lahan yang jelas dan terbaca.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsResubmitModalOpen(false)}
+                  className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {currentMitraUser.alasanPenolakan && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-950">
+                  <p className="font-bold text-red-900">Catatan Perbaikan dari Admin:</p>
+                  <p className="mt-1 italic text-red-900">&ldquo;{currentMitraUser.alasanPenolakan}&rdquo;</p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-gray-700">
+                  Pilih File Foto Baru (JPG, PNG): *
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleResubmitFileChange}
+                  className="block w-full text-xs text-gray-500 file:mr-3 file:rounded-xl file:border-0 file:bg-[#3D5126] file:px-3.5 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-[#273419] cursor-pointer"
+                />
+
+                {resubmitPreview ? (
+                  <div className="rounded-xl border border-emerald-300 bg-emerald-50/70 p-3 flex items-center justify-between gap-3 animate-in fade-in">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img
+                        src={resubmitPreview}
+                        alt="Pratinjau Berkas Baru"
+                        className="h-12 w-12 object-cover rounded-lg border border-emerald-300 shadow-xs shrink-0"
+                      />
+                      <div className="text-xs min-w-0">
+                        <p className="font-bold text-emerald-900 truncate">✓ Foto Siap Dikirim Ulang</p>
+                        <p className="text-[11px] text-emerald-700 font-mono truncate max-w-[200px]">
+                          {resubmitChosenName || "berkas-baru.jpg"}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResubmitPreview(null);
+                        setResubmitChosenName("");
+                      }}
+                      className="rounded-lg border border-red-200 bg-white px-2.5 py-1 text-[11px] font-bold text-red-600 hover:bg-red-50 shrink-0"
+                    >
+                      Ganti
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-amber-700 font-medium">
+                    ⚠️ Silakan pilih file foto dokumen / lahan pengganti yang jelas.
+                  </p>
+                )}
+
+                <div className="pt-2 border-t border-gray-100">
+                  <p className="text-xs font-bold text-gray-800 mb-2">
+                    Panduan Foto: Perbedaan Foto Bagus vs Foto Buram (Ditolak)
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl border border-emerald-300 bg-emerald-50/50 p-2.5 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-[9px] font-extrabold text-[#166534]">
+                            <CheckIcon className="h-2.5 w-2.5" /> Bagus (Diterima)
+                          </span>
+                        </div>
+                        <div className="relative overflow-hidden rounded-lg border border-emerald-200 bg-white aspect-16/10 mb-1.5">
+                          <img
+                            src="/images/limbah/pupuk_kompos.jpg"
+                            alt="Foto jernih diterima"
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <p className="text-[10px] text-emerald-900 font-medium leading-tight">
+                          ✓ Jernih, fokus tajam &amp; tulisan terbaca jelas.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-rose-300 bg-rose-50/50 p-2.5 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 border border-rose-300 px-2 py-0.5 text-[9px] font-extrabold text-[#991b1b]">
+                            <XMarkIcon className="h-2.5 w-2.5" /> Buram (Ditolak)
+                          </span>
+                        </div>
+                        <div className="relative overflow-hidden rounded-lg border border-rose-200 bg-white aspect-16/10 mb-1.5">
+                          <img
+                            src="/images/limbah/pupuk_kompos.jpg"
+                            alt="Foto buram ditolak"
+                            className="h-full w-full object-cover filter blur-[3px] brightness-75 contrast-75"
+                          />
+                        </div>
+                        <p className="text-[10px] text-rose-900 font-medium leading-tight">
+                          ✕ Buram, gelap, goyang atau dokumen terpotong.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-gray-100 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsResubmitModalOpen(false)}
+                  className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={!resubmitPreview}
+                  onClick={handleConfirmResubmitMitra}
+                  className="rounded-xl bg-[#3D5126] px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#273419] disabled:opacity-50 active:scale-95 transition-all"
+                >
+                  Kirim Ulang Dokumen
+                </button>
+              </div>
+            </div>
+          </div>
         )}
         </div>
       </div>

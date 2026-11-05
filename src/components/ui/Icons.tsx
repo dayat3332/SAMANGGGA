@@ -62,11 +62,14 @@ export function FaIcon({
   className?: string;
 }): JSX.Element {
   const [width, height, , , svgPathData] = icon.icon;
+  // Pastikan ikon selalu memiliki ukuran agar SVG tidak membesar memenuhi layar
+  const hasSize = /(^|\s)(h|w|size)-/.test(className);
+  const finalClassName = hasSize ? className : `h-4 w-4 shrink-0 ${className}`;
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
       fill="currentColor"
-      className={className}
+      className={finalClassName}
       aria-hidden="true"
     >
       {typeof svgPathData === "string" ? (
@@ -80,6 +83,10 @@ export function FaIcon({
 
 export function MenuIcon({ open, className = "h-6 w-6" }: { open: boolean; className?: string }): JSX.Element {
   return <FaIcon icon={open ? faXmark : faBars} className={className} />;
+}
+
+export function XMarkIcon({ className = "h-4 w-4" }: IconProps): JSX.Element {
+  return <FaIcon icon={faXmark} className={className} />;
 }
 
 export function SproutIcon({ className = "h-5 w-5" }: IconProps): JSX.Element {

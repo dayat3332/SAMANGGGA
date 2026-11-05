@@ -1,8 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useState, useSyncExternalStore } from "react";
 import type { ChangeEvent, JSX } from "react";
 import { Navbar } from "@/components/layout/SiteNavbar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -21,6 +20,12 @@ import {
   type FilterJenis,
   type WasteListing,
 } from "@/data/pasar-sirkular";
+import { type RoleSlug } from "@/data/profil";
+import {
+  getAuthSnapshot,
+  getServerAuthSnapshot,
+  subscribeAuth,
+} from "@/lib/auth";
 import { formatNumber, formatRupiah } from "@/lib/format";
 
 const FOCUS_RING =
@@ -29,19 +34,28 @@ const FOCUS_RING =
 interface WasteCardProps {
   item: WasteListing;
   isFavorite: boolean;
+  isLoggedIn: boolean;
+  userRole: RoleSlug | null;
   onToggleFavorite: (id: number) => void;
 }
 
-function WasteCard({ item, isFavorite, onToggleFavorite }: WasteCardProps): JSX.Element {
+function WasteCard({
+  item,
+  isFavorite,
+  isLoggedIn,
+  userRole,
+  onToggleFavorite,
+}: WasteCardProps): JSX.Element {
   const { id, jenis, owner, location, weightKg, estimatedPrice, condition, verification, status, usage } = item;
   const title = `Limbah ${jenis} Mangga`;
   const isBooked = status === "Dipesan";
   const isVerified = verification === "Terverifikasi";
   const pricePerKg = Math.round(estimatedPrice / weightKg);
 
+  const canPickUp = isLoggedIn && (userRole === "mitra" || userRole === "admin");
+
   return (
     <li className="group flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-md hover:shadow-xl transition-all duration-300 ring-1 ring-black/5">
-      {/* Area Gambar / Visual Limbah Floating */}
       <div className="relative h-44 sm:h-48 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
         {item.image ? (
           <img
@@ -56,16 +70,16 @@ function WasteCard({ item, isFavorite, onToggleFavorite }: WasteCardProps): JSX.
           </div>
         )}
 
-        {/* Badge Status di Kiri Atas */}
-        <span
-          className={`absolute top-3.5 left-3.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider backdrop-blur-md shadow-xs ${
-            isBooked ? "bg-gray-200/90 text-gray-800" : "bg-[#3D5126]/90 text-white"
-          }`}
-        >
-          {status}
-        </span>
+        {isLoggedIn && (
+          <span
+            className={`absolute top-3.5 left-3.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider backdrop-blur-md shadow-xs ${
+              isBooked ? "bg-gray-200/90 text-gray-800" : "bg-[#3D5126]/90 text-white"
+            }`}
+          >
+            {status}
+          </span>
+        )}
 
-        {/* Tombol Favorit Melayang di Kanan Atas */}
         <button
           type="button"
           onClick={() => onToggleFavorite(id)}
@@ -77,14 +91,11 @@ function WasteCard({ item, isFavorite, onToggleFavorite }: WasteCardProps): JSX.
         </button>
       </div>
 
-      {/* Badan Kartu Putih Melengkung Menumpuk */}
       <div className="relative -mt-4 flex flex-1 flex-col rounded-t-2xl sm:rounded-t-3xl bg-white p-4 sm:p-5 shadow-sm">
-        {/* Judul Limbah */}
         <h3 className="text-base sm:text-lg font-bold tracking-tight text-[#273419] line-clamp-1">
           {title}
         </h3>
 
-        {/* Info Pemilik & Lokasi */}
         <p className="mt-1 flex items-center gap-1 text-xs text-gray-500 truncate">
           <MapPinIcon className="h-3.5 w-3.5 shrink-0 text-[#6E8053]" />
           <span className="truncate">
@@ -92,7 +103,6 @@ function WasteCard({ item, isFavorite, onToggleFavorite }: WasteCardProps): JSX.
           </span>
         </p>
 
-        {/* Tags / Badges Berbingkai */}
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           <span className="rounded border border-gray-300 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-gray-700">
             {formatNumber(weightKg)} kg
@@ -108,13 +118,11 @@ function WasteCard({ item, isFavorite, onToggleFavorite }: WasteCardProps): JSX.
           )}
         </div>
 
-        {/* Deskripsi Potensi Pemanfaatan */}
         <p className="mt-2.5 text-xs sm:text-sm text-gray-600 line-clamp-2 sm:line-clamp-3 leading-relaxed">
           <span className="font-semibold text-[#273419]">Potensi: </span>
           {usage}
         </p>
 
-        {/* Footer: Harga Estimasi & Aksi */}
         <div className="mt-auto pt-4 flex items-end justify-between border-t border-gray-100 gap-2">
           <div className="min-w-0">
             <span className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-gray-400">
@@ -126,22 +134,24 @@ function WasteCard({ item, isFavorite, onToggleFavorite }: WasteCardProps): JSX.
             </p>
           </div>
 
-          {isBooked ? (
-            <button
-              type="button"
-              disabled
-              className="inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-xl bg-gray-200 px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-semibold text-gray-500"
-            >
-              Dipesan
-            </button>
-          ) : (
-            <Link
-              href={`/pasar-sirkular/jemput?limbah=${id}`}
-              aria-label={`Ajukan penjemputan: ${title} dari ${owner}`}
-              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#3D5126] px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#273419] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126] focus-visible:ring-offset-2"
-            >
-              Jemput
-            </Link>
+          {isLoggedIn && canPickUp && (
+            isBooked ? (
+              <button
+                type="button"
+                disabled
+                className="inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-xl bg-gray-200 px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-semibold text-gray-500"
+              >
+                Dipesan
+              </button>
+            ) : (
+              <Link
+                href={`/pasar-sirkular/jemput?limbah=${id}`}
+                aria-label={`Ajukan penjemputan: ${title} dari ${owner}`}
+                className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#3D5126] px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#273419] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126] focus-visible:ring-offset-2"
+              >
+                Jemput
+              </Link>
+            )
           )}
         </div>
       </div>
@@ -155,6 +165,11 @@ export default function PasarSirkular(): JSX.Element {
   const [onlyAvailable, setOnlyAvailable] = useState<boolean>(false);
   const [favorites, setFavorites] = useState<ReadonlySet<number>>(() => new Set());
 
+  // Auth State
+  const userRole = useSyncExternalStore(subscribeAuth, getAuthSnapshot, getServerAuthSnapshot);
+  const isLoggedIn = Boolean(userRole);
+  const canSetorLimbah = isLoggedIn && (userRole === "umkm" || userRole === "petani" || userRole === "admin");
+
   const toggleFavorite = (id: number): void => {
     setFavorites((prev) => {
       const next = new Set(prev);
@@ -163,6 +178,7 @@ export default function PasarSirkular(): JSX.Element {
       return next;
     });
   };
+
   const searchId = useId();
   const availableId = useId();
 
@@ -177,14 +193,14 @@ export default function PasarSirkular(): JSX.Element {
     return LISTINGS.filter(
       (l) =>
         (activeFilter === "Semua" || l.jenis === activeFilter) &&
-        (!onlyAvailable || l.status === "Tersedia") &&
+        (!(isLoggedIn && onlyAvailable) || l.status === "Tersedia") &&
         (q === "" ||
           l.jenis.toLowerCase().includes(q) ||
           l.owner.toLowerCase().includes(q) ||
           l.location.toLowerCase().includes(q) ||
           l.usage.toLowerCase().includes(q)),
     );
-  }, [activeFilter, onlyAvailable, query]);
+  }, [activeFilter, onlyAvailable, query, isLoggedIn]);
 
   const handleSearch = (e: ChangeEvent<HTMLInputElement>): void => setQuery(e.target.value);
 
@@ -193,25 +209,28 @@ export default function PasarSirkular(): JSX.Element {
       <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        {/* Header */}
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-[#273419]">Pasar Sirkular</h1>
-            <p className="mt-1 max-w-xl text-sm text-gray-700">
-              Kulit, biji, daun, dan buah afkir mangga punya nilai. Temukan limbah dari petani dan UMKM Indramayu, lalu
-              ajukan penjemputan untuk diolah.
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#273419]">
+              Pasar Sirkular Mangga Indramayu
+            </h1>
+            <p className="mt-1 max-w-xl text-xs sm:text-sm text-gray-700">
+              Kulit, biji, daun, dan buah afkir mangga punya nilai ekonomi. Temukan limbah dari petani dan UMKM Indramayu, lalu
+              ajukan penjemputan untuk diolah menjadi pakan ternak, pupuk, atau ekstrak pektin.
             </p>
           </div>
-          <Link
-            href="/pasar-sirkular/setor"
-            className={`inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-full border-2 border-[#3D5126] bg-white px-4 text-sm font-semibold text-[#273419] transition-colors hover:bg-[#95A87A]/25 ${FOCUS_RING}`}
-          >
-            <PlusIcon />
-            Setor Limbah Saya
-          </Link>
+
+          {canSetorLimbah && (
+            <Link
+              href="/pasar-sirkular/setor"
+              className={`inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-full border-2 border-[#3D5126] bg-white px-4 text-xs sm:text-sm font-semibold text-[#273419] transition-colors hover:bg-[#95A87A]/25 ${FOCUS_RING}`}
+            >
+              <PlusIcon />
+              Setor Limbah Saya
+            </Link>
+          )}
         </header>
 
-        {/* Alur singkat */}
         <ol className="mt-4 grid gap-2 sm:grid-cols-3">
           {CIRCULAR_STEPS.map((step, i) => (
             <li key={step.title} className="flex items-start gap-2 rounded-lg border border-gray-200 bg-white p-3">
@@ -226,106 +245,87 @@ export default function PasarSirkular(): JSX.Element {
                   <span className="sr-only">Langkah {i + 1}: </span>
                   {step.title}
                 </p>
-                <p className="text-sm text-gray-700">{step.description}</p>
+                <p className="text-xs sm:text-sm text-gray-700">{step.description}</p>
               </div>
             </li>
           ))}
         </ol>
 
-        {/* Pencarian */}
         <div role="search" className="mx-auto mt-5 max-w-xl">
           <label htmlFor={searchId} className="sr-only">
             Cari jenis limbah, pemilik, lokasi, atau pemanfaatan
           </label>
           <div className="relative">
-            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#6E8053]" />
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
             <input
               id={searchId}
               type="search"
               value={query}
               onChange={handleSearch}
-              placeholder="Cari limbah, pemilik, lokasi, atau kegunaan…"
-              autoComplete="off"
-              className="h-11 w-full rounded-full border border-[#95A87A] bg-white pl-10 pr-4 text-base text-[#273419] placeholder:text-gray-600 focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#3D5126]"
+              placeholder="Cari jenis limbah, pemilik, lokasi, atau pemanfaatan..."
+              className={`h-11 w-full rounded-full border border-gray-300 bg-white pl-9 pr-3 text-xs sm:text-sm text-[#273419] placeholder:text-gray-500 ${FOCUS_RING}`}
             />
           </div>
         </div>
 
-        {/* Filter jenis limbah */}
-        <div role="group" aria-label="Jenis limbah" className="mt-4 flex flex-wrap justify-center gap-2">
+        <nav aria-label="Filter jenis limbah" className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
           {WASTE_FILTERS.map((f) => {
-            const active = f === activeFilter;
+            const count = countByFilter[f];
+            const active = activeFilter === f;
             return (
               <button
                 key={f}
                 type="button"
-                aria-pressed={active}
                 onClick={() => setActiveFilter(f)}
-                className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold transition-colors ${FOCUS_RING} ${
-                  active
-                    ? "border-[#3D5126] bg-[#3D5126] text-white"
-                    : "border-[#95A87A] bg-transparent text-[#273419] hover:bg-[#95A87A]/25"
-                }`}
+                aria-pressed={active}
+                className={`inline-flex min-h-8 items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  active ? "bg-[#3D5126] text-white" : "border border-gray-300 bg-white text-[#273419] hover:bg-gray-100"
+                } ${FOCUS_RING}`}
               >
-                {f}
-                <span className={`font-normal ${active ? "text-white" : "text-gray-700"}`}>({countByFilter[f]})</span>
+                <span>{f}</span>
+                <span className={`text-[10px] ${active ? "text-emerald-100" : "text-gray-500"}`}>({count})</span>
               </button>
             );
           })}
-        </div>
+        </nav>
 
-        {/* Ringkasan hasil + toggle tersedia */}
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p role="status" aria-live="polite" className="text-sm text-gray-700">
-            Menampilkan <strong className="font-semibold text-[#273419]">{visible.length}</strong> limbah
-            {activeFilter !== "Semua" ? (
-              <>
-                {" "}
-                jenis <strong className="font-semibold text-[#273419]">{activeFilter}</strong>
-              </>
-            ) : null}
-            {query.trim() !== "" ? <> untuk “{query.trim()}”</> : null}
-          </p>
-          <label htmlFor={availableId} className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-sm font-medium text-[#273419]">
-            <input
-              id={availableId}
-              type="checkbox"
-              checked={onlyAvailable}
-              onChange={(e) => setOnlyAvailable(e.target.checked)}
-              className="h-4 w-4 rounded border-[#95A87A] accent-[#3D5126]"
-            />
-            Hanya yang tersedia
-          </label>
-        </div>
-
-        {visible.length > 0 ? (
-          <ul className="mt-3 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {visible.map((item) => (
-              <WasteCard
-                key={item.id}
-                item={item}
-                isFavorite={favorites.has(item.id)}
-                onToggleFavorite={toggleFavorite}
+        {isLoggedIn && (
+          <div className="mt-2 flex items-center justify-center">
+            <label htmlFor={availableId} className="flex cursor-pointer items-center gap-2 text-xs text-gray-700">
+              <input
+                id={availableId}
+                type="checkbox"
+                checked={onlyAvailable}
+                onChange={(e) => setOnlyAvailable(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 accent-[#3D5126]"
               />
-            ))}
-          </ul>
-        ) : (
-          <div className="mx-auto mt-3 max-w-md rounded-lg border border-dashed border-[#95A87A] bg-white p-6 text-center">
-            <p className="text-base font-semibold text-[#273419]">Limbah tidak ditemukan</p>
-            <p className="mt-1 text-sm text-gray-700">Coba kata kunci lain atau pilih jenis limbah yang berbeda.</p>
-            <button
-              type="button"
-              onClick={() => {
-                setQuery("");
-                setActiveFilter("Semua");
-                setOnlyAvailable(false);
-              }}
-              className={`mt-3 inline-flex min-h-10 items-center rounded-full bg-[#3D5126] px-4 text-sm font-semibold text-white hover:bg-[#273419] ${FOCUS_RING}`}
-            >
-              Reset filter
-            </button>
+              Hanya tampilkan yang masih tersedia
+            </label>
           </div>
         )}
+
+        <section aria-label="Daftar limbah mangga" className="mt-6">
+          {visible.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white py-12 text-center">
+              <span className="text-3xl">♻️</span>
+              <p className="mt-2 text-sm font-semibold text-gray-700">Tidak ada limbah yang cocok</p>
+              <p className="text-xs text-gray-500">Coba ubah kata kunci pencarian atau pilih filter lain.</p>
+            </div>
+          ) : (
+            <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {visible.map((item) => (
+                <WasteCard
+                  key={item.id}
+                  item={item}
+                  isFavorite={favorites.has(item.id)}
+                  isLoggedIn={isLoggedIn}
+                  userRole={userRole}
+                  onToggleFavorite={toggleFavorite}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
       </main>
 
       <SiteFooter />

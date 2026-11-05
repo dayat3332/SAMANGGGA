@@ -1,0 +1,32 @@
+{
+  "name": "samangga-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "REST API Backend untuk Platform SAMANGGA - Rantai Pasok & Pasar Limbah Sirkular Mangga Indramayu",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "node scripts/test-api.js",
+    "db:migrate": "node db/migrate.js",
+    "db:seed": "node db/seed.js",
+    "db:setup": "node db/migrate.js && node db/seed.js"
+  },
+  "keywords": [
+    "samangga",
+    "express",
+    "javascript",
+    "nodejs",
+    "indramayu",
+    "circular-economy",
+    "b2b"
+  ],
+  "author": "Tim SAMANGGA",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.23.1"
+  }
+}
