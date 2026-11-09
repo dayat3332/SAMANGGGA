@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model admin {
+  id_admin       Int      @id @default(autoincrement())
+  id_user        Int      @unique
+  nip_id_pegawai String   @db.VarChar(50)
+  tingkat_akses  String   @default("Super Admin") @db.VarChar(50)
+  no_telp        String?  @db.VarChar(30)
+  divisi         String?  @default("Tata Kelola Platform") @db.VarChar(100)
+  pengguna       pengguna @relation(fields: [id_user], references: [id_user], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model detail_transaksi {
+  id_detail_transaksi Int       @id @default(autoincrement())
+  id_transaksi        Int
+  id_produk           Int
+  jumlah_produk       Int       @default(1)
+  harga_satuan        Decimal   @default(0) @db.Decimal(14, 2)
+  subtotal_harga      Decimal   @default(0) @db.Decimal(14, 2)
+  produk              produk    @relation(fields: [id_produk], references: [id_produk], onUpdate: NoAction)
+  transaksi           transaksi @relation(fields: [id_transaksi], references: [id_transaksi], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model konsumen {
+  id_konsumen             Int      @id @default(autoincrement())
+  id_user                 Int      @unique
+  kategori_konsumen       String   @default("Ritel") @db.VarChar(50)
+  no_telp                 String?  @db.VarChar(30)
+  alamat_pengiriman_utama String?
+  titik_koordinat         String?  @db.VarChar(100)
+  pengguna                pengguna @relation(fields: [id_user], references: [id_user], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model limbah {
+  id_limbah           Int                   @id @default(autoincrement())
+  id_umkm             Int?
+  id_mitra            Int?
+  jenis_limbah        String                @db.VarChar(50)
+  berat_kg            Decimal               @default(0) @db.Decimal(10, 2)
+  estimasi_harga      Decimal               @default(0) @db.Decimal(14, 2)
+  jenis_kompensasi    String?               @default("Jual Beli") @db.VarChar(50)
+  harga_kesepakatan   Decimal?              @db.Decimal(14, 2)
+  lokasi_penjemputan  String
+  titik_koordinat     String?               @db.VarChar(100)
+  foto_limbah         String?
+  status_jemput       String                @default("Tersedia") @db.VarChar(50)
+  status_verifikasi   String                @default("Terverifikasi") @db.VarChar(30)
+  tgl_jemput          DateTime?             @db.Timestamp(6)
+  tgl_input           DateTime?             @default(now()) @db.Timestamp(6)
+  mitra               mitra?                @relation(fields: [id_mitra], references: [id_mitra], onUpdate: NoAction)
+  umkm                umkm?                 @relation(fields: [id_umkm], references: [id_umkm], onUpdate: NoAction)
+  pencatatan_keuangan pencatatan_keuangan[]
+
+  @@index([id_mitra], map: "idx_limbah_mitra")
+  @@index([status_jemput], map: "idx_limbah_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model log_sistem {
+  id_log       Int       @id @default(autoincrement())
+  id_user      Int?
+  level        String    @default("Info") @db.VarChar(20)
+  aksi         String    @db.VarChar(100)
+  endpoint_api String?   @db.VarChar(255)
+  kode_status  Int?      @default(200)
+  pesan        String
+  detail_error String?
+  waktu        DateTime? @default(now()) @db.Timestamp(6)
+  pengguna     pengguna? @relation(fields: [id_user], references: [id_user], onUpdate: NoAction)
+
+  @@index([waktu(sort: Desc)], map: "idx_log_sistem_waktu")
+}
+
+model mitra {
+  id_mitra                    Int                  @id @default(autoincrement())
+  id_user                     Int                  @unique
+  nama_mitra_instansi         String               @db.VarChar(150)
+  no_telp                     String?              @db.VarChar(30)
+  jenis_pengolahan_limbah     String?              @db.VarChar(150)
+  kapasitas_tampung_limbah_kg Int?                 @default(0)
+  jangkauan_area              String?
+  nama_bank                   String?              @db.VarChar(50)
+  no_rekening                 String?              @db.VarChar(50)
+  limbah                      limbah[]
+  pengguna                    pengguna             @relation(fields: [id_user], references: [id_user], onDelete: Cascade, onUpdate: NoAction)
+  riwayat_pengiriman          riwayat_pengiriman[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model pembayaran {
+  id_pembayaran        Int       @id @default(autoincrement())
+  id_transaksi         Int
+  metode_pembayaran    String    @db.VarChar(50)
+  jumlah_bayar         Decimal   @default(0) @db.Decimal(14, 2)
+  status_pembayaran    String    @default("Menunggu") @db.VarChar(50)
+  id_referensi_gateway String?   @db.VarChar(100)
+  kode_pembayaran      String?   @db.VarChar(100)
+  bukti_transfer       String?
+  batas_waktu_bayar    DateTime? @db.Timestamp(6)
+  tgl_bayar            DateTime? @db.Timestamp(6)
+  transaksi            transaksi @relation(fields: [id_transaksi], references: [id_transaksi], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model pencatatan_keuangan {
+  id_keuangan     Int        @id @default(autoincrement())
+  id_user         Int
+  id_transaksi    Int?
+  id_limbah       Int?
+  jenis_transaksi String     @db.VarChar(30)
+  jumlah_uang     Decimal    @default(0) @db.Decimal(14, 2)
+  keterangan      String?
+  tgl_pencatatan  DateTime?  @default(now()) @db.Timestamp(6)
+  limbah          limbah?    @relation(fields: [id_limbah], references: [id_limbah], onUpdate: NoAction)
+  transaksi       transaksi? @relation(fields: [id_transaksi], references: [id_transaksi], onUpdate: NoAction)
+  pengguna        pengguna   @relation(fields: [id_user], references: [id_user], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model pengguna {
+  id_user                                  Int                   @id @default(autoincrement())
+  nama_lengkap                             String                @db.VarChar(150)
+  peran                                    String                @db.VarChar(50)
+  no_telp                                  String?               @db.VarChar(30)
+  alamat                                   String?
+  email                                    String                @unique @db.VarChar(100)
+  password                                 String                @db.VarChar(255)
+  status_verifikasi                        String                @default("Menunggu") @db.VarChar(30)
+  foto_persyaratan_url                     String?
+  foto_persyaratan_name                    String?               @db.VarChar(255)
+  alasan_penolakan                         String?
+  tgl_daftar                               DateTime?             @default(now()) @db.Timestamp(6)
+  admin                                    admin?
+  konsumen                                 konsumen?
+  log_sistem                               log_sistem[]
+  mitra                                    mitra?
+  pencatatan_keuangan                      pencatatan_keuangan[]
+  produk                                   produk[]
+  supplier                                 supplier?
+  transaksi_transaksi_id_pembeliTopengguna transaksi[]           @relation("transaksi_id_pembeliTopengguna")
+  transaksi_transaksi_id_penjualTopengguna transaksi[]           @relation("transaksi_id_penjualTopengguna")
+  umkm                                     umkm?
+
+  @@index([peran], map: "idx_pengguna_peran")
+  @@index([status_verifikasi], map: "idx_pengguna_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model produk {
+  id_produk         Int                @id @default(autoincrement())
+  id_user           Int
+  nama_produk       String             @db.VarChar(150)
+  kategori          String             @db.VarChar(50)
+  harga             Decimal            @default(0) @db.Decimal(14, 2)
+  stok              Int                @default(0)
+  satuan            String             @default("kg") @db.VarChar(20)
+  deskripsi         String?
+  gambar            String?
+  status_verifikasi String             @default("Terverifikasi") @db.VarChar(30)
+  lokasi            String?            @db.VarChar(150)
+  tags              String[]
+  tgl_dibuat        DateTime?          @default(now()) @db.Timestamp(6)
+  detail_transaksi  detail_transaksi[]
+  pengguna          pengguna           @relation(fields: [id_user], references: [id_user], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model riwayat_pengiriman {
+  id_pengiriman     Int       @id @default(autoincrement())
+  id_transaksi      Int
+  id_mitra          Int?
+  tgl_pengiriman    DateTime? @default(now()) @db.Timestamp(6)
+  no_resi_lacak     String    @db.VarChar(100)
+  status_pengiriman String    @default("Diproses") @db.VarChar(50)
+  tgl_diterima      DateTime? @db.Timestamp(6)
+  mitra             mitra?    @relation(fields: [id_mitra], references: [id_mitra], onUpdate: NoAction)
+  transaksi         transaksi @relation(fields: [id_transaksi], references: [id_transaksi], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id_mitra], map: "idx_riwayat_pengiriman_mitra")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model supplier {
+  id_supplier           Int      @id @default(autoincrement())
+  id_user               Int      @unique
+  tipe_supplier         String   @default("Petani") @db.VarChar(50)
+  no_telp               String?  @db.VarChar(30)
+  luas_lahan_m2         Int?     @default(0)
+  jenis_komoditas_utama String?  @db.VarChar(100)
+  nama_bank             String?  @db.VarChar(50)
+  no_rekening           String?  @db.VarChar(50)
+  pengguna              pengguna @relation(fields: [id_user], references: [id_user], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model transaksi {
+  id_transaksi                            Int                   @id @default(autoincrement())
+  id_pembeli                              Int
+  id_penjual                              Int
+  total_harga                             Decimal               @default(0) @db.Decimal(14, 2)
+  status                                  String                @default("Pending") @db.VarChar(50)
+  tgl_transaksi                           DateTime?             @default(now()) @db.Timestamp(6)
+  detail_transaksi                        detail_transaksi[]
+  pembayaran                              pembayaran[]
+  pencatatan_keuangan                     pencatatan_keuangan[]
+  riwayat_pengiriman                      riwayat_pengiriman[]
+  pengguna_transaksi_id_pembeliTopengguna pengguna              @relation("transaksi_id_pembeliTopengguna", fields: [id_pembeli], references: [id_user], onUpdate: NoAction)
+  pengguna_transaksi_id_penjualTopengguna pengguna              @relation("transaksi_id_penjualTopengguna", fields: [id_penjual], references: [id_user], onUpdate: NoAction)
+
+  @@index([status], map: "idx_transaksi_status")
+}
+
+model umkm {
+  id_umkm                    Int      @id @default(autoincrement())
+  id_user                    Int      @unique
+  nama_usaha                 String   @db.VarChar(150)
+  nib                        String?  @db.VarChar(100)
+  no_telp                    String?  @db.VarChar(30)
+  kategori_produk_olahan     String?  @db.VarChar(100)
+  kapasitas_produksi_bulanan Int?     @default(0)
+  nama_bank                  String?  @db.VarChar(50)
+  no_rekening                String?  @db.VarChar(50)
+  limbah                     limbah[]
+  pengguna                   pengguna @relation(fields: [id_user], references: [id_user], onDelete: Cascade, onUpdate: NoAction)
+}

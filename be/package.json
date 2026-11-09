@@ -1,0 +1,50 @@
+{
+  "name": "samangga-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "REST API Backend untuk Platform SAMANGGA - Rantai Pasok & Pasar Limbah Sirkular Mangga Indramayu",
+  "main": "src/server.tsx",
+  "scripts": {
+    "dev": "tsx watch src/server.tsx",
+    "start": "tsx src/server.tsx",
+    "test": "tsx scripts/test-api.tsx",
+    "test:prisma": "tsx scripts/test-prisma.tsx",
+    "test:all": "tsx scripts/test-e2e.tsx",
+    "prisma:generate": "prisma generate",
+    "db:import-sql": "tsx db/import-sql.tsx",
+    "db:reset": "tsx db/import-sql.tsx",
+    "db:migrate": "tsx db/migrate.tsx",
+    "db:seed": "tsx db/seed.tsx",
+    "db:clean": "tsx db/clean.tsx",
+    "db:setup": "tsx db/migrate.tsx && tsx db/seed.tsx"
+  },
+  "keywords": [
+    "samangga",
+    "express",
+    "typescript",
+    "tsx",
+    "indramayu",
+    "circular-economy",
+    "b2b"
+  ],
+  "author": "Tim SAMANGGA",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.23.1",
+    "prisma": "^6.19.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

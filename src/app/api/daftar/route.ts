@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { validatePendaftaran } from "@/lib/validation";
 
-/**
- * Endpoint pendaftaran Pengguna (demo, tanpa database).
- * Akun baru selalu berstatus `Menunggu` verifikasi admin, sesuai ERD.
- * Untuk produksi: hash password, simpan ke tabel Pengguna, dan catat ke Log Sistem.
- */
 export async function POST(request: Request) {
   let body: unknown;
   try {

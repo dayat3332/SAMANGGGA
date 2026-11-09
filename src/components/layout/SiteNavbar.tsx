@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -67,7 +66,6 @@ function getServerCartCountSnapshot(): number {
 const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126] focus-visible:ring-offset-2 focus-visible:ring-offset-white";
 
-/** Logo: ikon mangga sederhana + wordmark. */
 export function Logo(): JSX.Element {
   return (
     <Link
@@ -144,7 +142,6 @@ export function Navbar(): JSX.Element {
       <nav aria-label="Navigasi utama" className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Logo />
 
-        {/* Tautan tengah (desktop) */}
         <ul className="hidden items-center gap-1 lg:flex">
           {NAV_ITEMS.map((item) => (
             <li key={item.href}>
@@ -161,9 +158,7 @@ export function Navbar(): JSX.Element {
           ))}
         </ul>
 
-        {/* Kanan */}
         <div className="flex items-center gap-2">
-          {/* Tombol Keranjang Belanja */}
           <Link
             href="/keranjang"
             aria-label={`Keranjang belanja, ${cartItemCount} item`}
@@ -178,7 +173,6 @@ export function Navbar(): JSX.Element {
           </Link>
 
           {currentProfile ? (
-            /* Sudah Login: Tampilkan Avatar Profil dengan Dropdown Menu */
             <div className="relative" ref={profileDropdownRef}>
               <button
                 type="button"
@@ -252,7 +246,6 @@ export function Navbar(): JSX.Element {
               )}
             </div>
           ) : (
-            /* Belum Login / Pengguna Baru: Tampilkan Tombol Masuk & Daftar */
             <>
               <Link
                 href="/login"
@@ -282,7 +275,6 @@ export function Navbar(): JSX.Element {
         </div>
       </nav>
 
-      {/* Menu mobile */}
       {open ? (
         <div id="menu-mobile" className="border-t border-gray-200 bg-white lg:hidden">
           <ul className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3 sm:px-6">

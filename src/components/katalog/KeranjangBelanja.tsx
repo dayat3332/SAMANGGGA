@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -49,7 +48,6 @@ export default function KeranjangBelanja(): JSX.Element {
         <Navbar />
 
         <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-          {/* Header Keranjang */}
           <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-200 pb-4">
             <div>
               <Link
@@ -79,7 +77,6 @@ export default function KeranjangBelanja(): JSX.Element {
           </div>
 
           {cartItems.length === 0 ? (
-            /* Tampilan Keranjang Kosong */
             <div className="mx-auto my-12 max-w-md rounded-3xl border border-dashed border-gray-300 bg-white p-8 text-center shadow-xs">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-[#3D5126]">
                 <BasketIcon className="h-8 w-8" />
@@ -99,9 +96,7 @@ export default function KeranjangBelanja(): JSX.Element {
               </Link>
             </div>
           ) : (
-            /* Layout Keranjang Berisi Produk */
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* Kolom Kiri: Tabel / Daftar Produk */}
               <div className="lg:col-span-8 rounded-3xl border border-gray-200 bg-white p-5 sm:p-6 shadow-sm">
                 <div className="divide-y divide-gray-100">
                   {cartItems.map((item) => (
@@ -109,7 +104,6 @@ export default function KeranjangBelanja(): JSX.Element {
                       key={item.id}
                       className="py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                     >
-                      {/* Foto & Info Utama */}
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-gray-100 border border-gray-200">
                           {item.image ? (
@@ -126,7 +120,6 @@ export default function KeranjangBelanja(): JSX.Element {
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          {/* Badge Kategori */}
                           <span className="inline-block rounded-md bg-[#95A87A]/20 px-2 py-0.5 text-[10px] font-bold text-[#166534]">
                             {item.category || "Mangga Segar"}
                           </span>
@@ -147,9 +140,7 @@ export default function KeranjangBelanja(): JSX.Element {
                         </div>
                       </div>
 
-                      {/* Kontrol Qty, Subtotal, & Tombol Hapus */}
                       <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-5 border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
-                        {/* Counter Tambah / Kurang */}
                         <div className="inline-flex items-center rounded-xl border border-gray-300 bg-[#F8FAFC] shadow-2xs">
                           <button
                             type="button"
@@ -173,7 +164,6 @@ export default function KeranjangBelanja(): JSX.Element {
                           </button>
                         </div>
 
-                        {/* Subtotal Item */}
                         <div className="text-right min-w-[90px]">
                           <span className="block text-[10px] uppercase font-bold text-gray-400">
                             Subtotal
@@ -183,7 +173,6 @@ export default function KeranjangBelanja(): JSX.Element {
                           </span>
                         </div>
 
-                        {/* Tombol Hapus Barang */}
                         <button
                           type="button"
                           onClick={() => removeFromCart(item.id)}
@@ -199,7 +188,6 @@ export default function KeranjangBelanja(): JSX.Element {
                 </div>
               </div>
 
-              {/* Kolom Kanan: Ringkasan & Tombol Langsung Checkout */}
               <div className="lg:col-span-4 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
                 <h2 className="text-base font-extrabold text-[#273419]">
                   Ringkasan Belanja
@@ -229,7 +217,6 @@ export default function KeranjangBelanja(): JSX.Element {
                   </span>
                 </div>
 
-                {/* Tombol Langsung Checkout */}
                 <Link
                   href="/pesan"
                   className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#3D5126] px-5 text-sm font-bold text-white shadow-md hover:bg-[#273419] active:scale-95 transition-all"
@@ -237,7 +224,6 @@ export default function KeranjangBelanja(): JSX.Element {
                   <span>Langsung Checkout &gt;</span>
                 </Link>
 
-                {/* Badge Jaminan */}
                 <div className="flex items-start gap-2.5 rounded-2xl bg-[#95A87A]/15 p-3 text-xs text-[#273419]">
                   <ShieldCheckIcon className="h-5 w-5 shrink-0 text-[#3D5126] mt-0.5" />
                   <p>

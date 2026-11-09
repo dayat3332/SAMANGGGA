@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -374,6 +373,10 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
   const handleKonsumenCheckout = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     const prod = produkList.find((p) => p.id_produk === selectedProdukId) ?? produkList[0];
+    if (!prod) {
+      notify("Belum ada produk yang tersedia untuk dipesan.");
+      return;
+    }
     const now = new Date().toISOString().replace("T", " ").slice(0, 19);
     const nextTrxId = transaksiList.reduce((max, t) => Math.max(max, t.id_transaksi), 5000) + 1;
     const subtotal = prod.harga * orderQty;
@@ -474,7 +477,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
     <div className="min-h-screen bg-[#F8FAFC] text-[#273419]">
       <Navbar />
 
-      {/* Sub-Navbar Kontekstual 1 Role Tetap (Sesuai ERD) & Pintasan ke Dashboard CRUD (Navbar Kiri) */}
       <div className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex flex-wrap items-center gap-2">
@@ -515,7 +517,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
       </div>
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        {/* Hero Banner Halaman Fungsi Role */}
         <section className="mb-8 rounded-3xl bg-gradient-to-br from-[#384A23] via-[#2D3B1C] to-[#1E2813] p-6 text-white shadow-md sm:p-8">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div>
@@ -562,10 +563,8 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
           </div>
         )}
 
-        {/* Supplier Views */}
         {currentRole === "petani" && (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-            {/* Kiri: Form Pasang Panen Buah */}
             <div className="lg:col-span-5">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -645,7 +644,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
               </div>
             </div>
 
-            {/* Kanan: Verifikasi Bukti Transfer Pembeli & Daftar Komoditas Aktif */}
             <div className="lg:col-span-7 space-y-6">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -755,7 +753,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
                 </div>
               </div>
 
-              {/* Fungsi 4: Beli Pupuk Kompos & Bibit Pohon dari Mitra (id_pembeli = #101) */}
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
@@ -810,10 +807,8 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
           </div>
         )}
 
-        {/* UMKM Views */}
         {currentRole === "umkm" && (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-            {/* Kiri: Wizard Setor Limbah Produksi UMKM */}
             <div className="lg:col-span-5">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -909,7 +904,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
               </div>
             </div>
 
-            {/* Kanan: Pengadaan Bahan Baku dari Supplier & Status Jemput Limbah */}
             <div className="lg:col-span-7 space-y-6">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -1002,10 +996,8 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
           </div>
         )}
 
-        {/* Mitra Views */}
         {currentRole === "mitra" && (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-            {/* Kolom 1: Bursa & Penjemputan Limbah UMKM */}
             <div className="lg:col-span-7 space-y-6">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <div className="flex items-center justify-between">
@@ -1090,7 +1082,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
               </div>
             </div>
 
-            {/* Kolom 2: Terminal Kurir Pengiriman Mitra */}
             <div className="lg:col-span-5 space-y-6">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -1144,10 +1135,8 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
           </div>
         )}
 
-        {/* Konsumen Views */}
         {currentRole === "konsumen" && (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-            {/* Kiri: Form Belanja & Checkout Konsumen */}
             <div className="lg:col-span-5">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -1174,7 +1163,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
                         ))}
                     </select>
 
-                    {/* Preview Gambar & Detail Produk Terpilih */}
                     {(() => {
                       const selectedProd = produkList.find((p) => p.id_produk === selectedProdukId);
                       if (!selectedProd) return null;
@@ -1250,7 +1238,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
               </div>
             </div>
 
-            {/* Kanan: Lacak Pesanan & Riwayat Pengiriman Konsumen */}
             <div className="lg:col-span-7 space-y-6">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -1335,10 +1322,8 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
           </div>
         )}
 
-        {/* Admin Views */}
         {currentRole === "admin" && (
           <div className="space-y-6">
-            {/* Switcher Tingkat Akses Admin */}
             <div className="flex flex-col justify-between gap-3 rounded-3xl border border-gray-200 bg-white p-5 shadow-xs sm:flex-row sm:items-center">
               <div>
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -1367,7 +1352,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {/* Panel Verifikasi Akun & Produk */}
               {(tingkatAkses === "Super Admin" || tingkatAkses === "Admin Transaksi") && (
                 <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs space-y-4">
                   <h3 className="text-base font-extrabold text-[#273419]">
@@ -1441,7 +1425,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
                 </div>
               )}
 
-              {/* Panel Verifikasi Limbah & Monitor Log Sistem */}
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-extrabold text-[#273419]">
@@ -1514,7 +1497,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
           </div>
         )}
 
-        {/* Ringkasan Arus Kas Terbaru Role Ini (Tabel Pencatatan Keuangan) */}
         {currentRole !== "admin" && (
           <section className="mt-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
             <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">

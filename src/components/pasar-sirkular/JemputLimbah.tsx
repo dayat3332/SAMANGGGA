@@ -1,9 +1,8 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent, JSX } from "react";
 import { Navbar } from "@/components/layout/SiteNavbar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -22,36 +21,60 @@ import {
   type CompensationScheme,
   type WasteListing,
 } from "@/data/pasar-sirkular";
+import {
+  createWastePickup,
+  getEcosystemWasteListings,
+  subscribeEcosystem,
+} from "@/lib/ecosystemStore";
 import { formatNumber, formatRupiah } from "@/lib/format";
 import type { StatusLimbah } from "@/types/samangga";
+
+const FALLBACK_LISTING: WasteListing = {
+  id: 0,
+  jenis: "Kulit",
+  owner: "-",
+  location: "-",
+  weightKg: 0,
+  estimatedPrice: 0,
+  condition: "-",
+  verification: "Terverifikasi",
+  status: "Tersedia",
+  usage: "-",
+};
 
 function JemputLimbahContent(): JSX.Element {
   const searchParams = useSearchParams();
   const initialId = Number(searchParams.get("limbah") ?? "1");
 
-  const availableListings = useMemo(() => LISTINGS, []);
+  const [availableListings, setAvailableListings] = useState<WasteListing[]>(() => getEcosystemWasteListings());
+
+  useEffect(() => {
+    const update = () => setAvailableListings(getEcosystemWasteListings());
+    const unsub = subscribeEcosystem(update);
+    return unsub;
+  }, []);
 
   const [selectedWasteId, setSelectedWasteId] = useState<number>(() => {
     const found = availableListings.find((l) => l.id === initialId);
-    return found ? found.id : availableListings[0].id;
+    return found ? found.id : (availableListings[0]?.id ?? 0);
   });
 
   const listing: WasteListing = useMemo(
-    () => availableListings.find((l) => l.id === selectedWasteId) ?? availableListings[0],
+    () => availableListings.find((l) => l.id === selectedWasteId) ?? (availableListings[0] ?? FALLBACK_LISTING),
     [availableListings, selectedWasteId],
   );
 
   // Berat yang diajukan untuk dijemput (default: seluruh batch)
   const [pickupWeightKg, setPickupWeightKg] = useState<number>(() => {
     const found = availableListings.find((l) => l.id === initialId) ?? availableListings[0];
-    return found.weightKg;
+    return found?.weightKg ?? 0;
   });
 
   const handleWasteChange = (e: ChangeEvent<HTMLSelectElement>): void => {
     const nextId = Number(e.target.value);
     setSelectedWasteId(nextId);
     const nextListing = availableListings.find((l) => l.id === nextId) ?? availableListings[0];
-    setPickupWeightKg(nextListing.weightKg);
+    setPickupWeightKg(nextListing?.weightKg ?? 0);
   };
 
   // Form Data Mitra Pengolah
@@ -90,6 +113,14 @@ function JemputLimbahContent(): JSX.Element {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
+    createWastePickup({
+      id_limbah: listing.id,
+      mitraId: 303,
+      namaMitra: namaInstansi || penanggungJawab || "CV Bio Tani Lestari",
+      jadwalJemput: `${tanggalJemput} ${sesiJemput.slice(0, 5)}:00`,
+      biayaTebus: estimatedCompensation,
+      ongkirArmada: selectedFleet.cost,
+    });
     setIsSubmitted(true);
     setStatusLimbah("Dipesan");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -100,7 +131,6 @@ function JemputLimbahContent(): JSX.Element {
       <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
-        {/* Breadcrumb & Header */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Link
@@ -139,7 +169,6 @@ function JemputLimbahContent(): JSX.Element {
           </div>
         </div>
 
-        {/* Alur Penjemputan Limbah */}
         <section
           aria-labelledby="alur-jemput-title"
           className="mb-8 rounded-2xl border border-[#95A87A] bg-white p-4 shadow-xs sm:p-5"
@@ -216,11 +245,32 @@ function JemputLimbahContent(): JSX.Element {
           </ol>
         </section>
 
-        {/* Layout 2 Kolom: Kiri Info Batch Limbah, Kanan Form Penjemputan / Simulasi Surat Jalan */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
+        {availableListings.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-gray-300 bg-white py-16 text-center">
+            <span className="text-4xl">♻️</span>
+            <h2 className="mt-3 text-base font-bold text-gray-800">Belum Ada Listing Limbah Tersedia</h2>
+            <p className="mt-1 max-w-md text-xs text-gray-500">
+              Saat ini belum ada data limbah aktif untuk dijemput. Anda dapat menyetor limbah baru atau menunggu listing dari UMKM/Petani.
+            </p>
+            <div className="mt-5 flex gap-3">
+              <Link
+                href="/pasar-sirkular"
+                className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+              >
+                Kembali ke Pasar Sirkular
+              </Link>
+              <Link
+                href="/pasar-sirkular/setor"
+                className="rounded-xl bg-[#3D5126] px-4 py-2 text-xs font-bold text-white hover:bg-[#273419]"
+              >
+                + Setor Limbah Baru
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
           <aside aria-label="Rincian batch limbah terpilih" className="lg:col-span-5">
             <div className="sticky top-20 space-y-4">
-              {/* Selector Ganti Batch Limbah */}
               <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
                 <label
                   htmlFor="pilih-limbah"
@@ -243,7 +293,6 @@ function JemputLimbahContent(): JSX.Element {
                 </select>
               </div>
 
-              {/* Kartu Detail Limbah */}
               <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-md">
                 <div className="relative flex h-48 w-full items-center justify-center bg-gray-100 overflow-hidden">
                   {listing.image ? (
@@ -291,7 +340,6 @@ function JemputLimbahContent(): JSX.Element {
                     <p className="mt-0.5 text-gray-700">{listing.usage}</p>
                   </div>
 
-                  {/* Kalkulasi Nilai Tebus & Biaya Logistik */}
                   <div className="mt-4 space-y-2 border-t border-gray-200 pt-4 text-sm">
                     <div className="flex items-center justify-between text-gray-700">
                       <span>Harga Estimasi per Kg</span>
@@ -325,7 +373,6 @@ function JemputLimbahContent(): JSX.Element {
                     </div>
                   </div>
 
-                  {/* Metrik Dampak Sirkular */}
                   <div className="mt-4 rounded-xl border border-green-700/30 bg-green-50/70 p-3 text-xs text-[#273419]">
                     <p className="font-bold text-green-900">🌱 Dampak Ekonomi Sirkular Batch Ini:</p>
                     <p className="mt-0.5 text-gray-700">
@@ -616,7 +663,6 @@ function JemputLimbahContent(): JSX.Element {
                   </div>
                 </div>
 
-                {/* Rincian Tiket Surat Jalan */}
                 <div className="grid grid-cols-1 gap-3 rounded-2xl border border-gray-200 bg-[#F8FAFC] p-4 text-xs sm:grid-cols-2">
                   <div>
                     <p className="font-bold uppercase tracking-wider text-gray-500">Mitra Pengolah (Penjemput)</p>
@@ -664,6 +710,7 @@ function JemputLimbahContent(): JSX.Element {
             )}
           </section>
         </div>
+        )}
       </main>
 
       <SiteFooter />

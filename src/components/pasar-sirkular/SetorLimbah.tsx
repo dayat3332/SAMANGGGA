@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -9,6 +8,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { WasteIcon } from "@/components/ui/Illustrations";
 import { JENIS_LIMBAH_OPTIONS } from "@/data/pasar-sirkular";
 import { formatRupiah } from "@/lib/format";
+import { saveEcosystemWaste } from "@/lib/ecosystemStore";
 import type { JenisLimbah } from "@/types/samangga";
 
 const JENIS_IMAGE_MAP: Record<JenisLimbah, string> = {
@@ -25,6 +25,7 @@ export default function SetorLimbah(): JSX.Element {
   const [beratKg, setBeratKg] = useState<number>(100);
   const [kondisi, setKondisi] = useState<string>("Segar, < 24 jam, terpisah dari sampah plastik");
   const [noWhatsapp, setNoWhatsapp] = useState<string>("");
+  const [fotoLimbah, setFotoLimbah] = useState<string>("");
   const [submitted, setSubmitted] = useState<boolean>(false);
 
   const selectedMeta = JENIS_LIMBAH_OPTIONS.find((j) => j.jenis === jenis) ?? JENIS_LIMBAH_OPTIONS[0];
@@ -32,6 +33,24 @@ export default function SetorLimbah(): JSX.Element {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
+    const finalFoto = fotoLimbah || JENIS_IMAGE_MAP[jenis];
+    if (!finalFoto) {
+      alert("Foto limbah wajib diunggah!");
+      return;
+    }
+
+    saveEcosystemWaste({
+      jenis_limbah: jenis as unknown as any,
+      berat_kg: beratKg,
+      estimasi_harga: estimasiHarga,
+      jenis_kompensasi: "Jual Beli",
+      harga_kesepakatan: estimasiHarga,
+      lokasi_penjemputan: `${lokasi} (Kontak: ${noWhatsapp || "0812-XXXX-XXXX"})`,
+      foto_limbah: finalFoto,
+      status_jemput: "Tersedia",
+      status_verifikasi: "Terverifikasi",
+    });
+
     setSubmitted(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -92,7 +111,6 @@ export default function SetorLimbah(): JSX.Element {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
-            {/* Kiri: Preview Kartu di Pasar Sirkular */}
             <aside className="lg:col-span-5">
               <div className="sticky top-20 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-md">
                 <div className="relative flex h-48 w-full items-center justify-center bg-gray-100 overflow-hidden">
@@ -127,7 +145,6 @@ export default function SetorLimbah(): JSX.Element {
               </div>
             </aside>
 
-            {/* Kanan: Form Setor */}
             <section className="lg:col-span-7">
               <form
                 onSubmit={handleSubmit}
@@ -240,6 +257,42 @@ export default function SetorLimbah(): JSX.Element {
                     placeholder="Contoh: Kering bersih / Segar < 24 jam terpisah dari plastik"
                     className="mt-1 h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-[#273419] focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#3D5126]"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#273419]">
+                    Foto Dokumentasi Limbah <span className="text-red-600">* (Wajib Unggah)</span>
+                  </label>
+                  <p className="mt-0.5 text-[11px] text-gray-500">
+                    Foto fisik limbah di lokasi untuk diverifikasi tim kurasi SAMANGGA dan Mitra Pengolah.
+                  </p>
+                  <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            setFotoLimbah(ev.target?.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="block w-full text-xs text-gray-500 file:mr-3 file:rounded-xl file:border-0 file:bg-[#3D5126] file:px-4 file:py-2.5 file:text-xs file:font-semibold file:text-white hover:file:bg-[#273419] file:cursor-pointer"
+                    />
+                    {fotoLimbah && (
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 border-emerald-500 shadow-sm">
+                        <img
+                          src={fotoLimbah}
+                          alt="Pratinjau foto limbah"
+                          className="h-full w-full object-cover"
+                        />
+                        <span className="absolute top-0.5 right-0.5 rounded-full bg-emerald-600 p-0.5 text-[8px] text-white">✓</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <button
