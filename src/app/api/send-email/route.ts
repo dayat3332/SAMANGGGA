@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 
 const RESEND_DEFAULT_OWNER = "2505032@student.polindra.ac.id";
 
@@ -15,15 +16,58 @@ export async function POST(req: Request) {
     }
 
     const timestamp = new Date().toISOString();
+    const smtpUser = process.env.SMTP_USER?.trim() || "";
+    const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, "") || "";
     const apiKey = process.env.RESEND_API_KEY || "";
     const senderFrom = process.env.RESEND_FROM_EMAIL || "SAMANGGA Indramayu <onboarding@resend.dev>";
 
-    let resendResult: { id?: string } | null = null;
-    let resendError: Record<string, unknown> | null = null;
+    let dispatchSuccess = false;
+    let providerUsed = "NONE";
     let effectiveDeliveredTo = to;
     let wasForwardedToSandboxOwner = false;
+    let resultDetails: Record<string, unknown> | null = null;
+    let errorDetails: Record<string, unknown> | null = null;
 
-    if (apiKey) {
+    // =========================================================================
+    // JALUR 1: GMAIL SMTP (Nodemailer) - Prioritas Utama
+    // Bebas kirim ke siapa saja (Gmail, Yahoo, dll) tanpa syarat custom domain / DNS!
+    // =========================================================================
+    if (smtpUser && smtpPass) {
+      try {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: smtpUser,
+            pass: smtpPass,
+          },
+        });
+
+        const mailOptions = {
+          from: `"SAMANGGA Indramayu" <${smtpUser}>`,
+          to: to,
+          subject: subject,
+          html: bodyHtml || `<p>${previewText || subject}</p>`,
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        dispatchSuccess = true;
+        providerUsed = "GMAIL_SMTP";
+        effectiveDeliveredTo = to;
+        resultDetails = {
+          messageId: info.messageId,
+          response: info.response,
+        };
+        console.log(`[Gmail SMTP Success] Email berhasil dikirimkan ke: ${to} (MessageId: ${info.messageId})`);
+      } catch (smtpErr: unknown) {
+        console.error("Gagal mengirim email via Gmail SMTP, mencoba fallback Resend:", smtpErr);
+        errorDetails = { smtpError: String(smtpErr) };
+      }
+    }
+
+    // =========================================================================
+    // JALUR 2: RESEND API (Fallback jika SMTP tidak diisi / gagal)
+    // =========================================================================
+    if (!dispatchSuccess && apiKey) {
       try {
         // Percobaan 1: Kirim langsung ke alamat 'to'
         const resendRes = await fetch("https://api.resend.com/emails", {
@@ -42,10 +86,12 @@ export async function POST(req: Request) {
 
         const resendJson = await resendRes.json();
         if (resendRes.ok) {
-          resendResult = resendJson;
+          dispatchSuccess = true;
+          providerUsed = "RESEND";
+          resultDetails = resendJson;
           effectiveDeliveredTo = to;
         } else {
-          resendError = resendJson;
+          errorDetails = { ...(errorDetails || {}), resendError: resendJson };
           console.warn("Resend API warning / note:", resendJson);
 
           // Cek apakah Resend menolak karena akun sandbox hanya boleh kirim ke email pemilik akun
@@ -55,7 +101,6 @@ export async function POST(req: Request) {
               resendJson.message.toLowerCase().includes("only send testing emails to your own email address"));
 
           if (isTestingRestriction) {
-            // Ambil email pemilik dari pesan error Resend atau default ke email polindra pemilik API key
             const match = resendJson?.message?.match(/\(([^)]+@student\.polindra\.ac\.id|[^)]+@[^)]+)\)/);
             const ownerEmail = match ? match[1] : RESEND_DEFAULT_OWNER;
 
@@ -65,7 +110,7 @@ export async function POST(req: Request) {
               <div style="background-color: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #92400E; line-height: 1.5;">
                 <strong style="display: block; margin-bottom: 4px; font-size: 14px;">📬 [Tembusan Uji Coba Resend Sandbox]</strong>
                 Email ini dikirimkan oleh sistem SAMANGGA untuk target: <strong>${to}</strong> (${recipientName || "Pengguna"}).<br/>
-                <em>Catatan: Karena domain Resend saat ini masih menggunakan domain uji coba bawaan (<code>onboarding@resend.dev</code>), Resend mewajibkan pengiriman uji coba diteruskan ke inbox pemilik akun (<code>${ownerEmail}</code>).</em>
+                <em>Catatan: Karena domain Resend saat ini masih menggunakan domain uji coba bawaan (<code>onboarding@resend.dev</code>), Resend mewajibkan pengiriman uji coba diteruskan ke inbox pemilik akun (<code>${ownerEmail}</code>). Aktifkan Gmail SMTP (SMTP_USER &amp; SMTP_PASS) untuk kirim langsung ke email target!</em>
               </div>
             `;
 
@@ -85,7 +130,9 @@ export async function POST(req: Request) {
 
             const fallbackJson = await fallbackRes.json();
             if (fallbackRes.ok) {
-              resendResult = fallbackJson;
+              dispatchSuccess = true;
+              providerUsed = "RESEND_SANDBOX_FALLBACK";
+              resultDetails = fallbackJson;
               effectiveDeliveredTo = ownerEmail;
               wasForwardedToSandboxOwner = true;
             } else {
@@ -101,36 +148,29 @@ export async function POST(req: Request) {
     // Log pengiriman email otomatis di server console
     console.log(`\n==================================================`);
     console.log(`📧 [SAMANGGA EMAIL DISPATCHER] ${timestamp}`);
-    console.log(`Target Asli   : ${to} (${recipientName || "Pengguna"})`);
-    console.log(`Terkirim Ke   : ${effectiveDeliveredTo}${wasForwardedToSandboxOwner ? " (Sandbox Owner Inbox)" : ""}`);
-    console.log(`Subject       : ${subject}`);
-    console.log(`Type          : ${type || "GENERAL"}`);
+    console.log(`Provider Digunakan : ${providerUsed}`);
+    console.log(`Target Asli        : ${to} (${recipientName || "Pengguna"})`);
+    console.log(`Terkirim Ke        : ${effectiveDeliveredTo}${wasForwardedToSandboxOwner ? " (Sandbox Owner Inbox)" : ""}`);
+    console.log(`Subject            : ${subject}`);
+    console.log(`Type               : ${type || "GENERAL"}`);
     if (reason) {
-      console.log(`Reason/Catatan: ${reason}`);
+      console.log(`Reason/Catatan     : ${reason}`);
     }
-    console.log(
-      `Resend Status : ${
-        resendResult
-          ? `TERKIRIM KE INBOX (Resend ID: ${resendResult.id})`
-          : resendError
-          ? `LOGGED ERROR (${JSON.stringify(resendError)})`
-          : "LOCAL ONLY"
-      }`
-    );
+    console.log(`Status             : ${dispatchSuccess ? "TERKIRIM KE INBOX" : "GAGAL / LOCAL ONLY"}`);
     console.log(`==================================================\n`);
 
     return NextResponse.json({
-      success: !!resendResult,
+      success: dispatchSuccess,
+      provider: providerUsed,
       deliveredTo: effectiveDeliveredTo,
       originalRecipient: to,
       wasForwardedToSandboxOwner,
       recipientName,
       subject,
       timestamp,
-      resendId: resendResult?.id,
-      resendDetails: resendResult || resendError,
+      details: resultDetails || errorDetails,
       message: wasForwardedToSandboxOwner
-        ? `Email berhasil dikirimkan ke inbox pengujian (${effectiveDeliveredTo}) sesuai aturan Sandbox Resend.`
+        ? `Email diteruskan ke inbox pengujian (${effectiveDeliveredTo}) sesuai aturan Sandbox Resend. Tambahkan SMTP_USER & SMTP_PASS di Vercel untuk kirim langsung ke penerima target.`
         : `Email notifikasi '${subject}' berhasil diproses dan dikirimkan ke alamat ${effectiveDeliveredTo}.`,
     });
   } catch (error) {
