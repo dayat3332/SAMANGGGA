@@ -59,6 +59,7 @@ import {
   clearActiveRole,
   clearActiveUserEmail,
   subscribeAuth,
+  syncRegisteredUsersFromDatabase,
   type RegisteredUser,
 } from "@/lib/auth";
 import { sendEmailNotification } from "@/lib/emailNotification";
@@ -507,8 +508,12 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   const [registeredUsersList, setRegisteredUsersList] = useState<RegisteredUser[]>(() =>
     getRegisteredUsers(),
   );
+  const [isSyncingUsers, setIsSyncingUsers] = useState<boolean>(false);
 
   useEffect(() => {
+    // Sinkronisasi data pendaftar & mitra dari database Supabase PostgreSQL
+    syncRegisteredUsersFromDatabase();
+
     const unsub = subscribeAuth(() => {
       setRegisteredUsersList(getRegisteredUsers());
     });
@@ -3039,13 +3044,30 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             <h2 className="text-sm font-bold text-gray-900">Verifikasi Mitra &amp; Pengguna Terdaftar ({registeredUsersList.length})</h2>
                             <p className="text-[11px] text-gray-500">Pendaftar baru via formulir web atau Akun Google secara real-time</p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setActiveTab("verifikasi-mitra")}
-                            className="inline-flex items-center gap-1 rounded-lg bg-[#3D5126] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#273419] transition-all cursor-pointer"
-                          >
-                            <span>Moderasikan ({pendingMitraCount})</span>
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                setIsSyncingUsers(true);
+                                await syncRegisteredUsersFromDatabase();
+                                setIsSyncingUsers(false);
+                                showToast("✓ Data pendaftar & mitra berhasil disinkronkan dari database!");
+                              }}
+                              disabled={isSyncingUsers}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-all cursor-pointer disabled:opacity-60"
+                              title="Tarik pendaftar baru dari database Supabase"
+                            >
+                              <ClockRotateLeftIcon className={`h-3.5 w-3.5 ${isSyncingUsers ? "animate-spin text-emerald-600" : ""}`} />
+                              <span>{isSyncingUsers ? "Menyinkronkan..." : "Sinkronkan DB"}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab("verifikasi-mitra")}
+                              className="inline-flex items-center gap-1 rounded-lg bg-[#3D5126] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#273419] transition-all cursor-pointer"
+                            >
+                              <span>Moderasikan ({pendingMitraCount})</span>
+                            </button>
+                          </div>
                         </div>
 
                         {registeredUsersList.length === 0 ? (
@@ -3378,6 +3400,21 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         Sesuai standar operasional SAMANGGA, pendaftaran Mitra mewajibkan upload foto lahan/fasilitas atau dokumen MoU. Calon mitra Supplier, UMKM, dan Konsumen langsung aktif tanpa upload dokumen. Admin memvalidasi kejelasan foto sebelum memberikan persetujuan (ACC).
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setIsSyncingUsers(true);
+                        await syncRegisteredUsersFromDatabase();
+                        setIsSyncingUsers(false);
+                        showToast("✓ Data mitra terdaftar berhasil diperbarui dari database Supabase!");
+                      }}
+                      disabled={isSyncingUsers}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-bold text-gray-700 shadow-xs hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-60"
+                      title="Perbarui daftar pendaftar mitra langsung dari server Supabase"
+                    >
+                      <ClockRotateLeftIcon className={`h-4 w-4 ${isSyncingUsers ? "animate-spin text-emerald-600" : "text-[#3D5126]"}`} />
+                      <span>{isSyncingUsers ? "Menyinkronkan..." : "Perbarui Data DB"}</span>
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 pt-1">

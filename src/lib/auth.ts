@@ -128,6 +128,13 @@ export function deleteRegisteredUser(emailOrId: string | number): boolean {
 
     window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(nextUsers));
 
+    // Kirim sinkronisasi hapus ke database Supabase PostgreSQL
+    fetch("/api/hapus-pengguna", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: target?.id || query, email: targetEmail }),
+    }).catch((err) => console.error("Gagal sinkronisasi hapus ke database:", err));
+
     // Jika akun yang dihapus sedang aktif / login di sesi ini, putus sesinya segera
     const activeEmail = getActiveUserEmail();
     if (targetEmail && activeEmail && activeEmail.trim().toLowerCase() === targetEmail) {
@@ -178,6 +185,27 @@ export function saveRegisteredUser(userData: Omit<RegisteredUser, "id" | "regist
       window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(nextUsers));
       window.localStorage.setItem(ACTIVE_USER_EMAIL_KEY, userToSave.email.trim().toLowerCase());
       notifyAuthChange();
+
+      // Sinkronisasi data pendaftaran baru ke database Supabase PostgreSQL secara real-time
+      fetch("/api/daftar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userToSave),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.user?.id) {
+            // Perbarui ID pengguna di local storage dengan ID database resmi
+            const updatedUsers = getRegisteredUsers().map((u) =>
+              u.email.toLowerCase() === userToSave.email.toLowerCase()
+                ? { ...u, id: data.user.id }
+                : u
+            );
+            window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+            notifyAuthChange();
+          }
+        })
+        .catch((err) => console.error("Gagal sinkronisasi pendaftaran ke database:", err));
     } catch (err) {
       console.error("Gagal menyimpan pengguna baru ke localStorage:", err);
     }
@@ -211,6 +239,18 @@ export function updateUserVerification(
     try {
       window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(nextUsers));
       notifyAuthChange();
+
+      // Sinkronisasi status verifikasi ke database Supabase PostgreSQL
+      fetch("/api/verifikasi-mitra", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: updated.id,
+          email: updated.email,
+          statusVerifikasi: status,
+          alasanPenolakan,
+        }),
+      }).catch((err) => console.error("Gagal sinkronisasi verifikasi ke database:", err));
     } catch (err) {
       console.error("Gagal memperbarui status verifikasi:", err);
     }
@@ -246,6 +286,19 @@ export function resubmitMitraPhoto(
     try {
       window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(nextUsers));
       notifyAuthChange();
+
+      // Sinkronisasi unggah ulang berkas foto ke database Supabase PostgreSQL
+      fetch("/api/verifikasi-mitra", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: updated.id,
+          email: updated.email,
+          statusVerifikasi: "Menunggu",
+          fotoPersyaratanUrl: photoUrl,
+          fotoPersyaratanName: photoName,
+        }),
+      }).catch((err) => console.error("Gagal sinkronisasi resubmit berkas ke database:", err));
     } catch (err) {
       console.error("Gagal mengirim ulang dokumen mitra:", err);
     }
@@ -306,6 +359,47 @@ export function subscribeAuth(callback: () => void): () => void {
     window.removeEventListener("storage", callback);
     window.removeEventListener(AUTH_CHANGE_EVENT, callback);
   };
+}
+
+/**
+ * Sinkronisasi data pendaftar & mitra dari database server Supabase PostgreSQL ke local state
+ * Memungkinkan Admin melihat pendaftar dari HP atau perangkat lain secara global
+ */
+export async function syncRegisteredUsersFromDatabase(): Promise<RegisteredUser[]> {
+  if (typeof window === "undefined") return [];
+  try {
+    const res = await fetch("/api/daftar", { cache: "no-store" });
+    if (!res.ok) return getRegisteredUsers();
+    const data = await res.json();
+
+    if (Array.isArray(data?.users)) {
+      const dbUsers: RegisteredUser[] = data.users;
+      const localUsers = getRegisteredUsers();
+      const dbEmails = new Set(dbUsers.map((u) => u.email.trim().toLowerCase()));
+
+      // Pengguna lokal yang belum ada di server (misal dibuat saat koneksi lambat)
+      const unsyncedLocal = localUsers.filter((u) => !dbEmails.has(u.email.trim().toLowerCase()));
+
+      // Kirim pendaftar lokal yang belum ada ke server
+      if (unsyncedLocal.length > 0) {
+        for (const localUser of unsyncedLocal) {
+          fetch("/api/daftar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(localUser),
+          }).catch(() => {});
+        }
+      }
+
+      const merged = [...dbUsers, ...unsyncedLocal];
+      window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
+      notifyAuthChange();
+      return merged;
+    }
+  } catch (err) {
+    console.error("Gagal sinkronisasi pengguna dari database:", err);
+  }
+  return getRegisteredUsers();
 }
 
 export function getAuthSnapshot(): RoleSlug | null {
