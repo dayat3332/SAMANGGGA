@@ -4,6 +4,10 @@ import { prisma } from "./prisma.tsx";
 
 const { Pool } = pg;
 
+const isRemoteDb =
+  (config.db.host && config.db.host !== "localhost") ||
+  Boolean(process.env.DATABASE_URL?.includes("supabase"));
+
 export const pool = new Pool({
   host: config.db.host,
   port: config.db.port,
@@ -13,6 +17,7 @@ export const pool = new Pool({
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
+  ssl: isRemoteDb ? { rejectUnauthorized: false } : undefined,
 });
 
 pool.on("error", (err) => {

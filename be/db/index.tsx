@@ -11,6 +11,10 @@ dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const { Pool } = pg;
 
+const isRemoteDb =
+  (process.env.DB_HOST && process.env.DB_HOST !== "localhost") ||
+  Boolean(process.env.DATABASE_URL?.includes("supabase"));
+
 export const pool = new Pool({
   host: process.env.DB_HOST || "localhost",
   port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
@@ -19,6 +23,7 @@ export const pool = new Pool({
   database: process.env.DB_NAME || "samangga_db",
   max: 10,
   idleTimeoutMillis: 30000,
+  ssl: isRemoteDb ? { rejectUnauthorized: false } : undefined,
 });
 
 pool.on("error", (err) => {
