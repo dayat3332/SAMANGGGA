@@ -16,6 +16,7 @@ export async function POST(req: Request) {
 
     const timestamp = new Date().toISOString();
     const apiKey = process.env.RESEND_API_KEY || "";
+    const senderFrom = process.env.RESEND_FROM_EMAIL || "SAMANGGA Indramayu <onboarding@resend.dev>";
 
     let resendResult: { id?: string } | null = null;
     let resendError: Record<string, unknown> | null = null;
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "SAMANGGA Indramayu <onboarding@resend.dev>",
+            from: senderFrom,
             to: [to],
             subject: subject,
             html: bodyHtml || `<p>${previewText || subject}</p>`,
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                from: "SAMANGGA Indramayu <onboarding@resend.dev>",
+                from: senderFrom,
                 to: [ownerEmail],
                 subject: `[Uji Coba - ${to}] ${subject}`,
                 html: sandboxBanner + (bodyHtml || `<p>${previewText || subject}</p>`),
