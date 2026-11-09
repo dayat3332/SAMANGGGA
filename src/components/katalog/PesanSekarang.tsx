@@ -30,6 +30,7 @@ import {
   updateCartQuantity,
 } from "@/lib/cart";
 import { formatRupiah } from "@/lib/format";
+import { createFullOrder } from "@/lib/ecosystemStore";
 import type { MetodePembayaran } from "@/types/samangga";
 
 const PRODUCT_ID_ALIAS_MAP: Record<string, string> = {
@@ -258,6 +259,28 @@ function PesanSekarangContent(): JSX.Element {
   };
 
   const handleConfirmOrder = (): void => {
+    try {
+      const orderItems = checkoutItems.map((ci) => ({
+        id_produk: Number(ci.id) || 1,
+        name: ci.name,
+        quantity: ci.quantity,
+        price: ci.price,
+      }));
+
+      createFullOrder({
+        buyerId: userProfile?.id_user ?? 404,
+        sellerId: 101,
+        items: orderItems,
+        totalAmount: grandTotal,
+        paymentMethod: metodePembayaran === "Kasir COD" ? "Transfer Manual" : (metodePembayaran as MetodePembayaran),
+        courierName: selectedCourier.name,
+        recipientName: `${firstName} ${secondName}`.trim(),
+        recipientAddress: `${streetAddress}, ${city} ${zipCode}`.trim(),
+      });
+    } catch (err) {
+      console.error("Gagal mencatat transaksi ekosistem:", err);
+    }
+
     if (cartItems.length > 0 && !queryProd) {
       clearCart();
     }

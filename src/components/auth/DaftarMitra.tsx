@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/Icons";
 import { DEFAULT_PROFILES, type RoleSlug } from "@/data/profil";
 import { saveRegisteredUser, setActiveRole } from "@/lib/auth";
+import { sendEmailNotification } from "@/lib/emailNotification";
 
 export type RoleType = RoleSlug;
 
@@ -282,6 +283,14 @@ function DaftarMitraContent(): JSX.Element {
       },
     });
 
+    // Kirim konfirmasi ke email pribadi pendaftar
+    sendEmailNotification({
+      to: formData.email.trim(),
+      recipientName: formData.namaLengkap.trim(),
+      type: "REGISTRASI_BERHASIL",
+      role: selectedRole,
+    });
+
     setActiveRole(selectedRole);
     router.push(`/profil/${selectedRole}`);
   };
@@ -315,6 +324,15 @@ function DaftarMitraContent(): JSX.Element {
         kepatuhanTransaksiApproved: true,
         sanksiKeamananApproved: true,
       },
+    });
+
+    // Kirim notifikasi pendaftaran mitra ke email pribadi
+    sendEmailNotification({
+      to: formData.email.trim(),
+      recipientName: formData.namaLengkap.trim(),
+      type: "REGISTRASI_BERHASIL",
+      role: "mitra",
+      extraInfo: "Pengajuan kemitraan Bio-Refinery Anda sedang dalam proses peninjauan berkas foto oleh Admin SAMANGGA. Segala pembaruan verifikasi (termasuk jika foto tidak jelas) akan dikirimkan langsung ke email ini.",
     });
 
     setActiveRole("mitra");

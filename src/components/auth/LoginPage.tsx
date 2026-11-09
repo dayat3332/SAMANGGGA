@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import type { ChangeEvent, FormEvent, JSX } from "react";
+import type { GoogleTokenResponse } from "@/types/google";
 import { Navbar } from "@/components/layout/SiteNavbar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { TopAlertBanner } from "@/components/ui/TopAlertBanner";
@@ -20,7 +22,7 @@ import {
   UsersIcon,
 } from "@/components/ui/Icons";
 import { type RoleSlug } from "@/data/profil";
-import { findUserByEmail, setActiveRole } from "@/lib/auth";
+import { findUserByEmail, isEmailDeleted, setActiveRole, setActiveUserEmail } from "@/lib/auth";
 
 type RoleFilter = "Petani" | "UMKM Kuliner" | "Pengolah Residu" | "Pembeli & Ritel" | "Admin Sistem";
 
@@ -76,6 +78,10 @@ const LOGIN_ROLES: readonly RoleOptionData[] = [
   },
 ];
 
+const GOOGLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+  "744974006867-m6h3tdsmoagrd9hl22kvsh1v33m908n1.apps.googleusercontent.com";
+
 interface GoogleAccountItem {
   name: string;
   email: string;
@@ -112,7 +118,8 @@ function LoginPageContent(): JSX.Element {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(true);
 
-  // Google Modal State
+  // Google Auth State
+  const [isGoogleLoading, setIsGoogleLoading] = useState<boolean>(false);
   const [showGoogleModal, setShowGoogleModal] = useState<boolean>(paramGoogle);
   const [customGoogleEmail, setCustomGoogleEmail] = useState<string>("");
   const [customGoogleName, setCustomGoogleName] = useState<string>("");
@@ -130,19 +137,60 @@ function LoginPageContent(): JSX.Element {
         message: "Akun yang Anda gunakan belum terdaftar di SAMANGGA. Silakan daftar terlebih dahulu.",
       };
     }
+    if (paramError === "account_deleted") {
+      return {
+        variant: "danger",
+        title: "Akun Telah Dihapus",
+        message: "Akun Anda telah dihapus oleh Admin Platform SAMANGGA. Silakan daftar kembali jika ingin bergabung.",
+      };
+    }
     return null;
   });
 
   const selectedRoleData = LOGIN_ROLES.find((r) => r.id === selectedRole) ?? LOGIN_ROLES[0];
 
+  const handleRoleSelect = (roleId: RoleFilter): void => {
+    setSelectedRole(roleId);
+    if (roleId === "Admin Sistem") {
+      setIdentifier("admin.pusat@samangga.id");
+      setPassword("admin123");
+    } else if (identifier === "admin.pusat@samangga.id") {
+      setIdentifier("");
+      setPassword("");
+    }
+  };
+
   const handleManualLogin = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (!identifier || !password) return;
 
-    // Cek apakah identifier adalah email yang terdaftar
+    // 1. Cek Login Admin Sistem
+    const isLoginAdmin =
+      selectedRole === "Admin Sistem" ||
+      identifier.trim().toLowerCase() === "admin" ||
+      identifier.trim().toLowerCase() === "admin.pusat@samangga.id" ||
+      identifier.trim().toLowerCase() === "admin@samangga.id";
+
+    if (isLoginAdmin) {
+      setActiveRole("admin");
+      setActiveUserEmail("admin.pusat@samangga.id");
+      setTopAlert({
+        variant: "success",
+        title: "Login Admin Berhasil",
+        message:
+          "Selamat datang kembali, Administrator Platform SAMANGGA. Mengarahkan ke Command Center...",
+      });
+      setTimeout(() => {
+        router.push("/profil/admin");
+      }, 500);
+      return;
+    }
+
+    // 2. Cek apakah identifier adalah email yang terdaftar
     const userFound = findUserByEmail(identifier);
     if (userFound) {
       setActiveRole(userFound.role);
+      setActiveUserEmail(userFound.email);
       setTopAlert({
         variant: "success",
         title: "Login Berhasil",
@@ -154,9 +202,21 @@ function LoginPageContent(): JSX.Element {
       return;
     }
 
-    // Jika tidak terdaftar berdasarkan email, gunakan role yang dipilih pengguna
-    setActiveRole(selectedRoleData.slug);
-    router.push(`/profil/${selectedRoleData.slug}`);
+    // 3. Jika akun tidak ditemukan atau telah dihapus oleh Admin
+    if (isEmailDeleted(identifier)) {
+      setTopAlert({
+        variant: "danger",
+        title: "Akun Telah Dihapus",
+        message: `Akun "${identifier}" telah dihapus oleh Admin Platform SAMANGGA. Silakan daftar kembali jika ingin bergabung.`,
+      });
+      return;
+    }
+
+    setTopAlert({
+      variant: "danger",
+      title: "Akun Belum Terdaftar",
+      message: `Akun "${identifier}" belum terdaftar di platform SAMANGGA. Silakan daftar terlebih dahulu.`,
+    });
   };
 
   const handleSelectGoogleAccount = (acc: GoogleAccountItem): void => {
@@ -166,35 +226,26 @@ function LoginPageContent(): JSX.Element {
     const existingUser = findUserByEmail(acc.email);
 
     if (existingUser) {
-      // Kasus A: Sudah terdaftar (baik manual sebelumnya atau via Google)
-      // Langsung arahkan ke role yang terdaftar dan login otomatis!
+      // Kasus A: Sudah pernah terdaftar dengan role di SAMANGGA
       setActiveRole(existingUser.role);
+      setActiveUserEmail(existingUser.email);
       setTopAlert({
         variant: "success",
         title: "Autentikasi Google Berhasil",
-        message: `Selamat datang kembali, ${existingUser.namaLengkap}! Anda masuk sebagai peran ${existingUser.roleTitle}.`,
+        message: `Selamat datang kembali, ${existingUser.namaLengkap}! Mengarahkan ke dashboard ${existingUser.roleTitle}...`,
       });
       setTimeout(() => {
         router.push(`/profil/${existingUser.role}`);
-      }, 700);
+      }, 500);
     } else {
-      // Kasus B: Belum pernah terdaftar sama sekali
-      // Tampilkan banner merah di atas dan arahkan ke registrasi dengan prefilled data
-      setTopAlert({
-        variant: "danger",
-        title: "Akun Google Belum Terdaftar",
-        message: `Akun Google (${acc.email}) belum terdaftar di SAMANGGA. Mengarahkan Anda ke formulir pendaftaran untuk memilih peran...`,
+      // Kasus B: Belum pernah terdaftar -> LANGSUNG masuk ke halaman registrasi (/daftar)
+      // membawa email dan nama dari Google agar pengguna bisa memilih peran
+      const queryParams = new URLSearchParams({
+        email: acc.email,
+        name: acc.name,
+        from: "google",
       });
-
-      setTimeout(() => {
-        const queryParams = new URLSearchParams({
-          email: acc.email,
-          name: acc.name,
-          from: "google",
-          error: "unregistered",
-        });
-        router.push(`/daftar?${queryParams.toString()}`);
-      }, 1200);
+      router.push(`/daftar?${queryParams.toString()}`);
     }
   };
 
@@ -210,8 +261,116 @@ function LoginPageContent(): JSX.Element {
     });
   };
 
+  const handleGoogleSignIn = (): void => {
+    if (typeof window === "undefined") return;
+
+    if (!window.google?.accounts?.oauth2) {
+      setTopAlert({
+        variant: "warning",
+        title: "Layanan Google Sedang Disiapkan",
+        message:
+          "Sedang menghubungkan ke Google Identity Services. Jika Anda menggunakan ekstensi AdBlocker atau offline, silakan coba lagi atau gunakan Simulasi Akun Demo.",
+      });
+      setShowGoogleModal(true);
+      return;
+    }
+
+    setIsGoogleLoading(true);
+
+    try {
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: "email profile openid",
+        prompt: "select_account",
+        callback: async (response: GoogleTokenResponse) => {
+          setIsGoogleLoading(false);
+
+          if (response.error) {
+            if (response.error === "popup_closed_by_user") {
+              return;
+            }
+            console.error("Google OAuth error:", response);
+            setTopAlert({
+              variant: "danger",
+              title: "Otorisasi Google Dibatalkan/Gagal",
+              message: `Pesan dari Google: ${response.error_description || response.error}. Pastikan origin 'http://localhost:3000' sudah didaftarkan pada Google Cloud Console.`,
+            });
+            return;
+          }
+
+          if (!response.access_token) {
+            setTopAlert({
+              variant: "danger",
+              title: "Gagal Autentikasi Google",
+              message: "Tidak berhasil mendapatkan token otorisasi dari Google.",
+            });
+            return;
+          }
+
+          try {
+            const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+              headers: {
+                Authorization: `Bearer ${response.access_token}`,
+              },
+            });
+
+            if (!res.ok) {
+              throw new Error(`Google API mengembalikan status ${res.status}`);
+            }
+
+            const userInfo = (await res.json()) as {
+              email?: string;
+              name?: string;
+              picture?: string;
+              given_name?: string;
+            };
+
+            if (!userInfo.email) {
+              throw new Error("Alamat email tidak dapat diperoleh dari akun Google.");
+            }
+
+            const displayName =
+              userInfo.name || userInfo.given_name || userInfo.email.split("@")[0];
+
+            handleSelectGoogleAccount({
+              name: displayName,
+              email: userInfo.email,
+              avatarText: (displayName[0] || "G").toUpperCase(),
+              avatarBg: "bg-blue-600",
+            });
+          } catch (fetchErr) {
+            console.error("Gagal mengambil profil akun Google:", fetchErr);
+            setTopAlert({
+              variant: "danger",
+              title: "Gagal Mengambil Data Profil",
+              message:
+                "Koneksi ke endpoint Google gagal. Anda dapat mencoba lagi atau menggunakan Simulasi Akun Demo.",
+            });
+          }
+        },
+        error_callback: (err: unknown) => {
+          setIsGoogleLoading(false);
+          console.warn("Google OAuth error_callback:", err);
+          setTopAlert({
+            variant: "warning",
+            title: "Pengaturan Domain Google Cloud",
+            message:
+              "Pop-up Google tidak dapat dibuka. Pastikan URL 'http://localhost:3000' sudah ditambahkan pada 'Authorized JavaScript origins' di Google Cloud Console.",
+          });
+        },
+      });
+
+      client.requestAccessToken();
+    } catch (err) {
+      setIsGoogleLoading(false);
+      console.error("Gagal menginisialisasi Google Token Client:", err);
+      setShowGoogleModal(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#273419]">
+      <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
       <Navbar />
 
       {topAlert && (
@@ -445,7 +604,7 @@ function LoginPageContent(): JSX.Element {
                           key={role.id}
                           type="button"
                           aria-pressed={isActive}
-                          onClick={() => setSelectedRole(role.id)}
+                          onClick={() => handleRoleSelect(role.id)}
                           className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition-all active:scale-95 ${
                             isActive
                               ? "border-green-700 bg-green-700 text-white shadow-xs ring-2 ring-green-700/20"
@@ -498,7 +657,7 @@ function LoginPageContent(): JSX.Element {
                         key={role.id}
                         type="button"
                         aria-pressed={isActive}
-                        onClick={() => setSelectedRole(role.id)}
+                        onClick={() => handleRoleSelect(role.id)}
                         className={`group flex flex-col justify-between rounded-xl p-3 text-left transition-all ${
                           isActive
                             ? "border-2 border-green-700 bg-emerald-50/30 shadow-xs ring-2 ring-green-700/15"
@@ -643,29 +802,46 @@ function LoginPageContent(): JSX.Element {
               <div>
                 <button
                   type="button"
-                  onClick={() => setShowGoogleModal(true)}
-                  className="w-full inline-flex min-h-12 items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-4 text-sm font-bold text-gray-700 shadow-2xs transition-all hover:bg-gray-50 hover:border-gray-400 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126]"
+                  onClick={handleGoogleSignIn}
+                  disabled={isGoogleLoading}
+                  className="w-full inline-flex min-h-12 items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-4 text-sm font-bold text-gray-700 shadow-2xs transition-all hover:bg-gray-50 hover:border-gray-400 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-                    <path
-                      fill="#4285F4"
-                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                    />
-                  </svg>
-                  <span>Masuk dengan Akun Google</span>
+                  {isGoogleLoading ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-[#3D5126]" />
+                  ) : (
+                    <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        fill="#4285F4"
+                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                      />
+                    </svg>
+                  )}
+                  <span>
+                    {isGoogleLoading ? "Menghubungkan ke Google..." : "Masuk dengan Akun Google"}
+                  </span>
                 </button>
+
+                <div className="mt-2.5 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowGoogleModal(true)}
+                    className="text-xs text-gray-500 hover:text-emerald-800 underline underline-offset-2 transition-colors cursor-pointer"
+                  >
+                    Atau gunakan simulasi akun uji coba / demo
+                  </button>
+                </div>
               </div>
 
               <div className="mt-6 border-t border-gray-100 pt-4 text-center">

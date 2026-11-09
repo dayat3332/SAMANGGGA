@@ -24,6 +24,10 @@ import {
   type Product,
   type ProductCategory,
 } from "@/data/katalog";
+import {
+  getEcosystemCatalogProducts,
+  subscribeEcosystem,
+} from "@/lib/ecosystemStore";
 import { type RoleSlug } from "@/data/profil";
 import { addToCart, getCartItems, subscribeCart } from "@/lib/cart";
 import {
@@ -236,10 +240,18 @@ function KatalogRantaiPasokContent(): JSX.Element {
   const isLoggedIn = Boolean(effectiveRole);
   const isUmkm = effectiveRole === "umkm";
 
+  const [productsList, setProductsList] = useState<Product[]>(() => getEcosystemCatalogProducts());
+
+  useEffect(() => {
+    const update = () => setProductsList(getEcosystemCatalogProducts());
+    const unsub = subscribeEcosystem(update);
+    return unsub;
+  }, []);
+
   // State Modal Detail Spesifikasi
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(() => {
     if (!detailParam) return null;
-    return PRODUCTS.find((p) => p.id === detailParam) ?? null;
+    return getEcosystemCatalogProducts().find((p) => p.id === detailParam) ?? null;
   });
   const [modalQuantity, setModalQuantity] = useState<number>(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -262,7 +274,7 @@ function KatalogRantaiPasokContent(): JSX.Element {
 
   const filteredProducts = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return PRODUCTS.filter((p) => {
+    return productsList.filter((p) => {
       const matchCat = p.category === activeCategory;
       const matchQ =
         q === "" ||
@@ -272,7 +284,7 @@ function KatalogRantaiPasokContent(): JSX.Element {
         p.tags.some((t) => t.toLowerCase().includes(q));
       return matchCat && matchQ;
     });
-  }, [activeCategory, query]);
+  }, [activeCategory, query, productsList]);
 
   const toggleFavorite = (id: string): void => {
     setFavorites((prev) => {

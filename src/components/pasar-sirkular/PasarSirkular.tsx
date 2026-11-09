@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useMemo, useState, useSyncExternalStore } from "react";
+import { useId, useMemo, useState, useEffect, useSyncExternalStore } from "react";
 import type { ChangeEvent, JSX } from "react";
 import { Navbar } from "@/components/layout/SiteNavbar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -20,6 +20,10 @@ import {
   type FilterJenis,
   type WasteListing,
 } from "@/data/pasar-sirkular";
+import {
+  getEcosystemWasteListings,
+  subscribeEcosystem,
+} from "@/lib/ecosystemStore";
 import { type RoleSlug } from "@/data/profil";
 import {
   getAuthSnapshot,
@@ -182,15 +186,27 @@ export default function PasarSirkular(): JSX.Element {
   const searchId = useId();
   const availableId = useId();
 
-  const countByFilter = useMemo(() => {
-    const counts: Record<FilterJenis, number> = { Semua: LISTINGS.length, Kulit: 0, Biji: 0, Daun: 0, "Buah Afkir": 0 };
-    for (const l of LISTINGS) counts[l.jenis] += 1;
-    return counts;
+  const [allListings, setAllListings] = useState<WasteListing[]>(() => getEcosystemWasteListings());
+
+  useEffect(() => {
+    const update = () => setAllListings(getEcosystemWasteListings());
+    const unsub = subscribeEcosystem(update);
+    return unsub;
   }, []);
+
+  const countByFilter = useMemo(() => {
+    const counts: Record<FilterJenis, number> = { Semua: allListings.length, Kulit: 0, Biji: 0, Daun: 0, "Buah Afkir": 0 };
+    for (const l of allListings) {
+      if (counts[l.jenis] !== undefined) {
+        counts[l.jenis] += 1;
+      }
+    }
+    return counts;
+  }, [allListings]);
 
   const visible = useMemo<WasteListing[]>(() => {
     const q = query.trim().toLowerCase();
-    return LISTINGS.filter(
+    return allListings.filter(
       (l) =>
         (activeFilter === "Semua" || l.jenis === activeFilter) &&
         (!(isLoggedIn && onlyAvailable) || l.status === "Tersedia") &&
@@ -200,7 +216,7 @@ export default function PasarSirkular(): JSX.Element {
           l.location.toLowerCase().includes(q) ||
           l.usage.toLowerCase().includes(q)),
     );
-  }, [activeFilter, onlyAvailable, query, isLoggedIn]);
+  }, [activeFilter, onlyAvailable, query, isLoggedIn, allListings]);
 
   const handleSearch = (e: ChangeEvent<HTMLInputElement>): void => setQuery(e.target.value);
 

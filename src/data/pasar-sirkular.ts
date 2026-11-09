@@ -35,8 +35,76 @@ export const CIRCULAR_STEPS: readonly CircularStep[] = [
   { title: "Dijemput mitra", description: "Mitra pengolah memesan dan menjemput ke lokasi." },
 ];
 
-// Listing Pasar Sirkular (Telah dipindahkan ke Backend 'be/src/seeds/waste.seed.ts')
-export const LISTINGS: readonly WasteListing[] = [];
+// Listing Pasar Sirkular Terpadu
+export const INITIAL_WASTE_LISTINGS: readonly WasteListing[] = [
+  {
+    id: 1,
+    jenis: "Biji",
+    owner: "UMKM Dapur Mangga Bu Ning",
+    location: "Sentra Olahan Dapur Bu Ning, Sindang, Indramayu",
+    weightKg: 350,
+    estimatedPrice: 525000,
+    condition: "Segar < 24 jam, terpisah dari plastik dan sampah anorganik",
+    verification: "Terverifikasi",
+    status: "Tersedia",
+    usage: "Tepung pati biji mangga, bibit batang bawah, pakan ternak",
+    image: "/images/limbah/limbah_biji_mangga.jpg",
+  },
+  {
+    id: 2,
+    jenis: "Kulit",
+    owner: "UMKM Dapur Mangga Bu Ning",
+    location: "Sentra Olahan Dapur Bu Ning, Sindang, Indramayu",
+    weightKg: 120,
+    estimatedPrice: 120000,
+    condition: "Segar < 24 jam, kadar air stabil, wadah karung bersih",
+    verification: "Terverifikasi",
+    status: "Tersedia",
+    usage: "Kompos organik, pakan maggot BSF, ekstraksi pektin",
+    image: "/images/limbah/limbah_kulit_mangga.jpg",
+  },
+  {
+    id: 3,
+    jenis: "Kulit",
+    owner: "Camilan Keripik Mangga Barokah",
+    location: "Sentra Keripik Losarang, Losarang, Indramayu",
+    weightKg: 80,
+    estimatedPrice: 72000,
+    condition: "Sisa kupasan harian, higienis bebas kontaminan",
+    verification: "Terverifikasi",
+    status: "Dipesan",
+    usage: "Kompos organik, fermentasi pupuk cair",
+    image: "/images/limbah/limbah_kulit_mangga.jpg",
+  },
+  {
+    id: 4,
+    jenis: "Buah Afkir",
+    owner: "KT Sumber Rejeki Lohbener",
+    location: "Gudang Sortir KT Sumber Rejeki, Lohbener, Indramayu",
+    weightKg: 500,
+    estimatedPrice: 1250000,
+    condition: "Sortir grade C / memar alami saat petik, belum busuk",
+    verification: "Terverifikasi",
+    status: "Tersedia",
+    usage: "Pulp olahan, cuka mangga, fermentasi eco-enzyme, pakan",
+    image: "/images/mangga/mangga_afkir.jpg",
+  },
+  {
+    id: 5,
+    jenis: "Daun",
+    owner: "Gapoktan Mekar Tani Jatibarang",
+    location: "Kebun Mangga Gapoktan Mekar Tani, Jatibarang, Indramayu",
+    weightKg: 300,
+    estimatedPrice: 150000,
+    condition: "Pangkas ranting & daun hijau segar kering matahari",
+    verification: "Terverifikasi",
+    status: "Tersedia",
+    usage: "Bahan baku mulsa, kompos fermentasi, bio-briket",
+    image: "/images/limbah/limbah_daun_mangga.jpg",
+  },
+];
+
+export const LISTINGS: readonly WasteListing[] = INITIAL_WASTE_LISTINGS;
 
 export interface JenisLimbahOption {
   jenis: JenisLimbah;

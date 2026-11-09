@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { pool } from "./index.tsx";
 import {
   SEED_PENGGUNA,
@@ -26,7 +27,6 @@ export async function runSeed(): Promise<void> {
 
     await client.query("BEGIN;");
 
-    // Bersihkan data lama dengan CASCADE
     await client.query(`
       TRUNCATE TABLE
         log_sistem,
@@ -46,7 +46,8 @@ export async function runSeed(): Promise<void> {
       RESTART IDENTITY CASCADE;
     `);
 
-    // 1. Seed Pengguna
+    const passwordHash = await bcrypt.hash(process.env.DEMO_PASSWORD || "samangga2026", 10);
+
     for (const u of SEED_PENGGUNA) {
       await client.query(
         `INSERT INTO pengguna (
@@ -55,7 +56,8 @@ export async function runSeed(): Promise<void> {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         ON CONFLICT (id_user) DO UPDATE SET
           nama_lengkap = EXCLUDED.nama_lengkap,
-          status_verifikasi = EXCLUDED.status_verifikasi;`,
+          status_verifikasi = EXCLUDED.status_verifikasi,
+          password = EXCLUDED.password;`,
         [
           u.id_user,
           u.nama_lengkap,
@@ -63,7 +65,7 @@ export async function runSeed(): Promise<void> {
           u.no_telp,
           u.alamat,
           u.email,
-          u.password,
+          passwordHash,
           u.status_verifikasi,
           u.foto_persyaratan_url || null,
           u.foto_persyaratan_name || null,
@@ -74,7 +76,6 @@ export async function runSeed(): Promise<void> {
     }
     console.log(`✅ ${SEED_PENGGUNA.length} Pengguna seeded.`);
 
-    // 2. Seed Admin
     for (const a of SEED_ADMIN) {
       await client.query(
         `INSERT INTO admin (
@@ -86,7 +87,6 @@ export async function runSeed(): Promise<void> {
     }
     console.log(`✅ ${SEED_ADMIN.length} Admin seeded.`);
 
-    // 3. Seed Supplier
     for (const s of SEED_SUPPLIER) {
       await client.query(
         `INSERT INTO supplier (
@@ -107,7 +107,6 @@ export async function runSeed(): Promise<void> {
       );
     }
 
-    // 4. Seed UMKM
     for (const m of SEED_UMKM) {
       await client.query(
         `INSERT INTO umkm (
@@ -129,7 +128,6 @@ export async function runSeed(): Promise<void> {
       );
     }
 
-    // 5. Seed Mitra
     for (const mt of SEED_MITRA) {
       await client.query(
         `INSERT INTO mitra (
@@ -151,7 +149,6 @@ export async function runSeed(): Promise<void> {
       );
     }
 
-    // 6. Seed Konsumen
     for (const k of SEED_KONSUMEN) {
       await client.query(
         `INSERT INTO konsumen (
@@ -162,7 +159,6 @@ export async function runSeed(): Promise<void> {
       );
     }
 
-    // 7. Seed Produk
     for (const p of SEED_PRODUK) {
       await client.query(
         `INSERT INTO produk (
@@ -187,7 +183,6 @@ export async function runSeed(): Promise<void> {
       );
     }
 
-    // 8. Seed Limbah
     for (const l of SEED_LIMBAH) {
       await client.query(
         `INSERT INTO limbah (
@@ -215,7 +210,6 @@ export async function runSeed(): Promise<void> {
       );
     }
 
-    // 9. Seed Transaksi
     for (const t of SEED_TRANSAKSI) {
       await client.query(
         `INSERT INTO transaksi (
@@ -226,7 +220,6 @@ export async function runSeed(): Promise<void> {
       );
     }
 
-    // 10. Seed Detail Transaksi
     for (const dt of SEED_DETAIL_TRANSAKSI) {
       await client.query(
         `INSERT INTO detail_transaksi (
@@ -244,7 +237,6 @@ export async function runSeed(): Promise<void> {
       );
     }
 
-    // 11. Seed Pembayaran
     for (const pb of SEED_PEMBAYARAN) {
       await client.query(
         `INSERT INTO pembayaran (
@@ -267,7 +259,6 @@ export async function runSeed(): Promise<void> {
       );
     }
 
-    // 12. Seed Riwayat Pengiriman (Logistik Mitra)
     for (const rp of SEED_RIWAYAT_PENGIRIMAN) {
       await client.query(
         `INSERT INTO riwayat_pengiriman (
@@ -286,7 +277,6 @@ export async function runSeed(): Promise<void> {
       );
     }
 
-    // 13. Seed Pencatatan Keuangan
     for (const k of SEED_KEUANGAN) {
       await client.query(
         `INSERT INTO pencatatan_keuangan (
@@ -306,7 +296,6 @@ export async function runSeed(): Promise<void> {
       );
     }
 
-    // 14. Seed Log Sistem Awal
     for (const log of SEED_LOG_SISTEM) {
       await client.query(
         `INSERT INTO log_sistem (
@@ -327,7 +316,6 @@ export async function runSeed(): Promise<void> {
       );
     }
 
-    // Reset sequence auto-increment ke max ID
     await client.query(`
       SELECT setval('pengguna_id_user_seq', COALESCE((SELECT MAX(id_user) FROM pengguna), 1) + 1, false);
       SELECT setval('admin_id_admin_seq', COALESCE((SELECT MAX(id_admin) FROM admin), 1) + 1, false);

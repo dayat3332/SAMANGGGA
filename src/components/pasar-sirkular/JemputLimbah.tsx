@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent, JSX } from "react";
 import { Navbar } from "@/components/layout/SiteNavbar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -21,6 +21,11 @@ import {
   type CompensationScheme,
   type WasteListing,
 } from "@/data/pasar-sirkular";
+import {
+  createWastePickup,
+  getEcosystemWasteListings,
+  subscribeEcosystem,
+} from "@/lib/ecosystemStore";
 import { formatNumber, formatRupiah } from "@/lib/format";
 import type { StatusLimbah } from "@/types/samangga";
 
@@ -41,7 +46,13 @@ function JemputLimbahContent(): JSX.Element {
   const searchParams = useSearchParams();
   const initialId = Number(searchParams.get("limbah") ?? "1");
 
-  const availableListings = useMemo(() => LISTINGS, []);
+  const [availableListings, setAvailableListings] = useState<WasteListing[]>(() => getEcosystemWasteListings());
+
+  useEffect(() => {
+    const update = () => setAvailableListings(getEcosystemWasteListings());
+    const unsub = subscribeEcosystem(update);
+    return unsub;
+  }, []);
 
   const [selectedWasteId, setSelectedWasteId] = useState<number>(() => {
     const found = availableListings.find((l) => l.id === initialId);
@@ -102,6 +113,14 @@ function JemputLimbahContent(): JSX.Element {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
+    createWastePickup({
+      id_limbah: listing.id,
+      mitraId: 303,
+      namaMitra: namaInstansi || penanggungJawab || "CV Bio Tani Lestari",
+      jadwalJemput: `${tanggalJemput} ${sesiJemput.slice(0, 5)}:00`,
+      biayaTebus: estimatedCompensation,
+      ongkirArmada: selectedFleet.cost,
+    });
     setIsSubmitted(true);
     setStatusLimbah("Dipesan");
     window.scrollTo({ top: 0, behavior: "smooth" });
