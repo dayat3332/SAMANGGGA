@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import type { JSX } from "react";
 import {
@@ -105,12 +104,10 @@ const NAV_KATEGORI = [
 export function SiteFooter(): JSX.Element {
   return (
     <footer className="relative border-t border-[#3D5126]/30 bg-gradient-to-b from-[#222E17] via-[#1D2713] to-[#151D0E] text-white">
-      {/* Garis Aksen Emas Halus di Puncak Footer */}
       <div className="h-1 w-full bg-gradient-to-r from-[#3D5126] via-[#FFB81C] to-[#3D5126]" />
 
       <div className="mx-auto max-w-7xl px-4 pt-12 pb-8 sm:px-6 lg:px-8 lg:pt-16">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-8 pb-12 border-b border-white/10">
-          {/* Kolom 1: Branding & Narasi Sirkular */}
           <div className="space-y-4 lg:col-span-4">
             <Link
               href="/"
@@ -136,7 +133,6 @@ export function SiteFooter(): JSX.Element {
               ekosistem ekonomi hijau <em>zero-waste</em>.
             </p>
 
-            {/* Ikon Sosial Media Interaktif */}
             <div className="pt-2">
               <p className="text-xs font-extrabold uppercase tracking-wider text-white/90">
                 Media Sosial &amp; Komunikasi
@@ -159,7 +155,6 @@ export function SiteFooter(): JSX.Element {
             </div>
           </div>
 
-          {/* Kolom 2, 3, 4: Navigasi Tautan (Navbar Footer) */}
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-5">
             {NAV_KATEGORI.map((col) => (
               <div key={col.title} className="space-y-3">
@@ -182,14 +177,12 @@ export function SiteFooter(): JSX.Element {
             ))}
           </div>
 
-          {/* Kolom 5: Kontak Resmi, Telepon, Email & Lokasi */}
           <div className="space-y-4 lg:col-span-3">
             <h3 className="text-xs font-black uppercase tracking-wider text-[#FFE39A]">
               Pusat Informasi &amp; Kontak
             </h3>
 
             <div className="space-y-3.5 text-xs text-white/80">
-              {/* Lokasi */}
               <div className="flex items-start gap-2.5">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/8 text-[#FFB81C] ring-1 ring-white/10">
                   <MapPinIcon className="h-4 w-4" />
@@ -211,7 +204,6 @@ export function SiteFooter(): JSX.Element {
                 </div>
               </div>
 
-              {/* Telepon */}
               <div className="flex items-start gap-2.5">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/8 text-[#FFB81C] ring-1 ring-white/10">
                   <PhoneIcon className="h-4 w-4" />
@@ -240,7 +232,6 @@ export function SiteFooter(): JSX.Element {
                 </div>
               </div>
 
-              {/* Email */}
               <div className="flex items-start gap-2.5">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/8 text-[#FFB81C] ring-1 ring-white/10">
                   <UserMailIcon className="h-4 w-4" />
@@ -264,7 +255,6 @@ export function SiteFooter(): JSX.Element {
                 </div>
               </div>
 
-              {/* Jam Operasional */}
               <div className="flex items-start gap-2.5 pt-1">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/8 text-[#FFB81C] ring-1 ring-white/10">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">

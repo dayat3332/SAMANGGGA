@@ -24,8 +24,6 @@ export type RoleSlug = "petani" | "umkm" | "mitra" | "konsumen" | "admin";
 
 export const ROLE_STORAGE_KEY = "samangga_active_role";
 
-// Profil 5 Peran Ekosistem
-
 export interface BaseUserProfile {
   id_user: number;
   slug: RoleSlug;
@@ -264,8 +262,6 @@ export const DEFAULT_PROFILES: Record<RoleSlug, AnyRoleProfile> = {
   },
 };
 
-// Data Awal Relasional ERD Platform
-
 export const INITIAL_PENGGUNA_LIST: readonly Pengguna[] = [
   {
     id_user: 101,
@@ -347,7 +343,6 @@ export const INITIAL_PENGGUNA_LIST: readonly Pengguna[] = [
 ];
 
 export const INITIAL_PRODUK_LIST: readonly Produk[] = [
-  // Produk ditawarkan oleh Supplier (id_user = 101, kategori = "Buah")
   {
     id_produk: 1001,
     id_user: 101,
@@ -384,7 +379,6 @@ export const INITIAL_PRODUK_LIST: readonly Produk[] = [
     gambar: "/images/mangga/mangga_afkir.jpg",
     status_verifikasi: "Menunggu",
   },
-  // Produk ditawarkan oleh UMKM (id_user = 202, kategori = "Olahan")
   {
     id_produk: 2001,
     id_user: 202,
@@ -421,7 +415,6 @@ export const INITIAL_PRODUK_LIST: readonly Produk[] = [
     gambar: "/images/olahan/pulp_mangga.jpg",
     status_verifikasi: "Menunggu",
   },
-  // Produk Sirkular ditawarkan oleh Mitra (id_user = 303, hasil olahan limbah kulit & biji mangga)
   {
     id_produk: 3001,
     id_user: 303,
@@ -449,7 +442,6 @@ export const INITIAL_PRODUK_LIST: readonly Produk[] = [
 ];
 
 export const INITIAL_TRANSAKSI_LIST: readonly Transaksi[] = [
-  // Transaksi 5001: Konsumen (404) membeli Buah dari Supplier (101) — Transfer Manual (Menunggu konfirmasi penjual)
   {
     id_transaksi: 5001,
     id_pembeli: 404,
@@ -458,7 +450,6 @@ export const INITIAL_TRANSAKSI_LIST: readonly Transaksi[] = [
     total_harga: 7250000,
     status: "Pending",
   },
-  // Transaksi 5002: UMKM (202) membeli bahan baku Buah dari Supplier (101) — Virtual Account (Berhasil)
   {
     id_transaksi: 5002,
     id_pembeli: 202,
@@ -467,7 +458,6 @@ export const INITIAL_TRANSAKSI_LIST: readonly Transaksi[] = [
     total_harga: 9600000,
     status: "Selesai",
   },
-  // Transaksi 5003: Konsumen (404) membeli Produk Olahan dari UMKM (202) — QRIS (Berhasil, sedang dikirim)
   {
     id_transaksi: 5003,
     id_pembeli: 404,
@@ -476,7 +466,6 @@ export const INITIAL_TRANSAKSI_LIST: readonly Transaksi[] = [
     total_harga: 1660000,
     status: "Diproses",
   },
-  // Transaksi 5004: Konsumen (404) membeli Produk Olahan dari UMKM (202) — Transfer Manual (Menunggu konfirmasi penjual UMKM)
   {
     id_transaksi: 5004,
     id_pembeli: 404,
@@ -485,7 +474,6 @@ export const INITIAL_TRANSAKSI_LIST: readonly Transaksi[] = [
     total_harga: 840000,
     status: "Pending",
   },
-  // Transaksi 5005: Supplier/Petani (101) membeli Pupuk Kompos & Bibit Pohon dari Mitra (303) — QRIS (Selesai)
   {
     id_transaksi: 5005,
     id_pembeli: 101,
@@ -719,12 +707,7 @@ export const INITIAL_RIWAYAT_PENGIRIMAN_LIST: readonly RiwayatPengiriman[] = [
   },
 ];
 
-/**
- * Tabel `Pencatatan Keuangan`
- * Sesuai aturan ERD: "Aturan: salah satu dari id_transaksi atau id_limbah wajib terisi."
- */
 export const INITIAL_KEUANGAN_LIST: readonly PencatatanKeuangan[] = [
-  // Catatan Keuangan Supplier (id_user = 101)
   {
     id_keuangan: 6001,
     id_user: 101,
@@ -735,7 +718,6 @@ export const INITIAL_KEUANGAN_LIST: readonly PencatatanKeuangan[] = [
     jumlah_uang: 9600000,
     keterangan: "Penerimaan penjualan 8 Kwintal Mangga Arumanis Super ke UMKM Dapur Mangga Bu Ning",
   },
-  // Catatan Keuangan UMKM (id_user = 202)
   {
     id_keuangan: 6002,
     id_user: 202,
@@ -766,7 +748,6 @@ export const INITIAL_KEUANGAN_LIST: readonly PencatatanKeuangan[] = [
     jumlah_uang: 1660000,
     keterangan: "Penjualan 50 Pak Dodol & 20 Botol Sirup Mangga ke Konsumen Segar Buah Nusantara",
   },
-  // Catatan Keuangan Mitra (id_user = 303)
   {
     id_keuangan: 6005,
     id_user: 303,
@@ -787,7 +768,6 @@ export const INITIAL_KEUANGAN_LIST: readonly PencatatanKeuangan[] = [
     jumlah_uang: 350000,
     keterangan: "Pendapatan jasa penanganan pengiriman logistik rantai pasok #RESI-SMG-2026-5002",
   },
-  // Catatan Keuangan Konsumen (id_user = 404)
   {
     id_keuangan: 6007,
     id_user: 404,

@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -49,7 +48,6 @@ function ProductCard({
 
   return (
     <li className="group flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-md hover:shadow-xl transition-all duration-300 ring-1 ring-black/5">
-      {/* Area Gambar / Visual Produk Floating */}
       <div
         role="button"
         tabIndex={0}
@@ -76,12 +74,10 @@ function ProductCard({
           </div>
         )}
 
-        {/* Badge Kategori */}
         <span className="absolute top-3 left-3 rounded-full bg-black/45 px-2.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-md">
           {category}
         </span>
 
-        {/* Tombol Favorit Melayang di Sudut Kanan Atas */}
         <button
           type="button"
           onClick={(e) => {
@@ -95,7 +91,6 @@ function ProductCard({
           <HeartIcon filled={isFavorite} className="h-4 w-4" />
         </button>
 
-        {/* Overlay Hover Prompt */}
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 text-center opacity-0 group-hover:opacity-100 transition-opacity">
           <span className="text-[11px] font-medium text-white/95">
             🔍 Klik untuk lihat spesifikasi lengkap
@@ -103,9 +98,7 @@ function ProductCard({
         </div>
       </div>
 
-      {/* Badan Kartu Putih Melengkung Menumpuk */}
       <div className="relative -mt-4 flex flex-1 flex-col rounded-t-2xl sm:rounded-t-3xl bg-white p-4 sm:p-5 shadow-sm">
-        {/* Judul Produk */}
         <h3
           role="button"
           tabIndex={0}
@@ -121,7 +114,6 @@ function ProductCard({
           {name}
         </h3>
 
-        {/* Info Penjual & Lokasi */}
         <p className="mt-1 flex items-center gap-1 text-xs text-gray-500 truncate">
           <MapPinIcon className="h-3.5 w-3.5 shrink-0 text-[#6E8053]" />
           <span className="truncate">
@@ -129,7 +121,6 @@ function ProductCard({
           </span>
         </p>
 
-        {/* Tags / Badges Berbingkai */}
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-gray-700">
             Stok: {formatNumber(stock)} {stockUnit}
@@ -144,12 +135,10 @@ function ProductCard({
           ))}
         </div>
 
-        {/* Deskripsi Singkat */}
         <p className="mt-2.5 text-xs sm:text-sm text-gray-600 line-clamp-2 leading-relaxed">
           {description}
         </p>
 
-        {/* Tombol Spesifikasi / Detail Pesan */}
         <button
           type="button"
           onClick={() => onOpenDetail(product)}
@@ -159,7 +148,6 @@ function ProductCard({
           <ArrowRightIcon className="h-3 w-3 text-[#3D5126]" />
         </button>
 
-        {/* Footer: Harga (Kiri) & Tombol Aksi (Kanan) */}
         <div className="mt-auto pt-4 flex items-end justify-between border-t border-gray-100 gap-2">
           <div className="min-w-0">
             <span className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-gray-400">
@@ -172,7 +160,6 @@ function ProductCard({
           </div>
 
           <div className="flex items-center gap-1.5">
-            {/* Quick Add to Cart Button */}
             <button
               type="button"
               onClick={(e) => onAddToCart(product, e)}
@@ -183,7 +170,6 @@ function ProductCard({
               <BasketIcon className="h-4 w-4" />
             </button>
 
-            {/* Tombol Pesan Sekarang */}
             <Link
               href={`/pesan?produk=${id}`}
               aria-label={`Pesan sekarang: ${name}`}
@@ -214,7 +200,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
   const [favorites, setFavorites] = useState<ReadonlySet<string>>(() => new Set());
   const searchId = useId();
 
-  // State Modal Detail Spesifikasi
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(() => {
     if (!detailParam) return null;
     return PRODUCTS.find((p) => p.id === detailParam) ?? null;
@@ -228,7 +213,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
     getServerCartSnapshot,
   );
 
-  // Esc listener untuk modal
   useEffect(() => {
     if (!selectedProduct) return;
     const onKey = (e: KeyboardEvent): void => {
@@ -238,7 +222,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
     return () => window.removeEventListener("keydown", onKey);
   }, [selectedProduct]);
 
-  // Toast auto-hide
   useEffect(() => {
     if (!toastMessage) return;
     const t = setTimeout(() => setToastMessage(null), 3000);
@@ -304,7 +287,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
     <div className="min-h-screen bg-[#F8FAFC] text-[#273419]">
       <Navbar />
 
-      {/* Floating Notification Toast */}
       {toastMessage && (
         <aside
           role="status"
@@ -322,7 +304,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
         </aside>
       )}
 
-      {/* Floating Cart Indicator */}
       {cartTotalItems > 0 && !selectedProduct && (
         <div className="fixed bottom-6 left-6 z-40">
           <Link
@@ -344,7 +325,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
       )}
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        {/* Header */}
         <header>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#273419]">
             Katalog Rantai Pasok Mangga
@@ -354,7 +334,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
           </p>
         </header>
 
-        {/* Pencarian */}
         <div role="search" className="mx-auto mt-4 max-w-xl">
           <label htmlFor={searchId} className="sr-only">
             Cari produk, penjual, atau lokasi
@@ -373,7 +352,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
           </div>
         </div>
 
-        {/* Filter kategori */}
         <div role="group" aria-label="Kategori produk" className="mt-4 flex flex-wrap justify-center gap-2">
           {CATEGORIES.map((cat) => {
             const active = cat === activeCategory;
@@ -396,7 +374,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
           })}
         </div>
 
-        {/* Hasil */}
         <p role="status" aria-live="polite" className="mt-5 text-sm text-gray-700">
           Menampilkan <strong className="font-semibold text-[#273419]">{visibleProducts.length}</strong> produk di{" "}
           <strong className="font-semibold text-[#273419]">{activeCategory}</strong>
@@ -433,9 +410,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
         )}
       </main>
 
-      {/* ========================================================================= */}
-      {/* MODAL DETAIL PESAN & SPESIFIKASI LENGKAP MANGGA */}
-      {/* ========================================================================= */}
       {selectedProduct && (
         <div
           role="dialog"
@@ -443,9 +417,7 @@ function KatalogRantaiPasokContent(): JSX.Element {
           aria-labelledby="modal-product-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs animate-in fade-in"
         >
-          {/* Card Container Modal */}
           <div className="relative flex flex-col max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10">
-            {/* Top Close Button */}
             <button
               type="button"
               onClick={() => setSelectedProduct(null)}
@@ -455,11 +427,8 @@ function KatalogRantaiPasokContent(): JSX.Element {
               ✕
             </button>
 
-            {/* Scrollable Content Body */}
             <div className="overflow-y-auto p-5 sm:p-6 space-y-5">
-              {/* Product Hero Info */}
               <div className="flex flex-col sm:flex-row gap-5 items-start">
-                {/* Gambar Produk */}
                 <div className="relative h-44 w-full sm:h-48 sm:w-48 shrink-0 overflow-hidden rounded-2xl bg-gray-100 border border-gray-200">
                   {selectedProduct.image ? (
                     <img
@@ -477,7 +446,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
                   </span>
                 </div>
 
-                {/* Detail Header & Harga */}
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
@@ -519,7 +487,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
                 </div>
               </div>
 
-              {/* Grid Spesifikasi Buah Mangga */}
               <div>
                 <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
                   <CheckBadgeIcon className="h-4 w-4 text-[#3D5126]" />
@@ -545,7 +512,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
                 </div>
               </div>
 
-              {/* Jaminan SAMANGGA */}
               <div className="flex items-center gap-3 rounded-2xl bg-amber-50/70 border border-amber-200/60 p-3 text-xs text-amber-900">
                 <TruckIcon className="h-5 w-5 shrink-0 text-amber-700" />
                 <p>
@@ -553,7 +519,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
                 </p>
               </div>
 
-              {/* Quantity Counter & Subtotal Preview */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-gray-50 p-3.5 border border-gray-200">
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-gray-700">Jumlah Pesanan:</span>
@@ -596,9 +561,7 @@ function KatalogRantaiPasokContent(): JSX.Element {
               </div>
             </div>
 
-            {/* Bottom Actions Bar (2 CTA Sesuai Permintaan User: Tambah Keranjang & Pesan Sekarang) */}
             <div className="border-t border-gray-100 bg-white p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-3">
-              {/* CTA 1: Tambah ke Keranjang */}
               <button
                 type="button"
                 onClick={handleAddFromModal}
@@ -608,7 +571,6 @@ function KatalogRantaiPasokContent(): JSX.Element {
                 <span>Tambah ke Keranjang</span>
               </button>
 
-              {/* CTA 2: Pesan Sekarang */}
               <Link
                 href={`/pesan?produk=${selectedProduct.id}&qty=${modalQuantity}`}
                 className="w-full sm:flex-1 inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#3D5126] px-5 text-sm font-bold text-white shadow-md hover:bg-[#273419] active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126]"

@@ -172,7 +172,6 @@ export default function DaftarMitra(): JSX.Element {
       <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-        {/* Header Pendaftaran */}
         <header className="mb-8">
           <div className="mb-4 inline-flex items-center rounded-full border border-gray-200 bg-white p-1 shadow-xs">
             <span className="rounded-full bg-[#166534] px-4 py-1.5 text-xs font-bold text-white shadow-xs">
@@ -252,7 +251,6 @@ export default function DaftarMitra(): JSX.Element {
                     })}
                   </div>
 
-                  {/* Keterangan Peran Aktif di Mobile */}
                   <div className="mt-2.5 rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs leading-relaxed text-[#273419]">
                     <div className="flex items-center justify-between font-bold text-[#166534]">
                       <span className="flex items-center gap-1.5">
@@ -344,7 +342,6 @@ export default function DaftarMitra(): JSX.Element {
               </div>
             </section>
 
-            {/* Kolom Formulir Pendaftaran */}
             <section aria-labelledby="form-section-title" className="lg:col-span-7">
               <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm">
                 <div className="border-b border-gray-100 pb-4">

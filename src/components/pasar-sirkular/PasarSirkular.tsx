@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -41,7 +40,6 @@ function WasteCard({ item, isFavorite, onToggleFavorite }: WasteCardProps): JSX.
 
   return (
     <li className="group flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-md hover:shadow-xl transition-all duration-300 ring-1 ring-black/5">
-      {/* Area Gambar / Visual Limbah Floating */}
       <div className="relative h-44 sm:h-48 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
         {item.image ? (
           <img
@@ -56,7 +54,6 @@ function WasteCard({ item, isFavorite, onToggleFavorite }: WasteCardProps): JSX.
           </div>
         )}
 
-        {/* Badge Status di Kiri Atas */}
         <span
           className={`absolute top-3.5 left-3.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider backdrop-blur-md shadow-xs ${
             isBooked ? "bg-gray-200/90 text-gray-800" : "bg-[#3D5126]/90 text-white"
@@ -65,7 +62,6 @@ function WasteCard({ item, isFavorite, onToggleFavorite }: WasteCardProps): JSX.
           {status}
         </span>
 
-        {/* Tombol Favorit Melayang di Kanan Atas */}
         <button
           type="button"
           onClick={() => onToggleFavorite(id)}
@@ -77,14 +73,11 @@ function WasteCard({ item, isFavorite, onToggleFavorite }: WasteCardProps): JSX.
         </button>
       </div>
 
-      {/* Badan Kartu Putih Melengkung Menumpuk */}
       <div className="relative -mt-4 flex flex-1 flex-col rounded-t-2xl sm:rounded-t-3xl bg-white p-4 sm:p-5 shadow-sm">
-        {/* Judul Limbah */}
         <h3 className="text-base sm:text-lg font-bold tracking-tight text-[#273419] line-clamp-1">
           {title}
         </h3>
 
-        {/* Info Pemilik & Lokasi */}
         <p className="mt-1 flex items-center gap-1 text-xs text-gray-500 truncate">
           <MapPinIcon className="h-3.5 w-3.5 shrink-0 text-[#6E8053]" />
           <span className="truncate">
@@ -92,7 +85,6 @@ function WasteCard({ item, isFavorite, onToggleFavorite }: WasteCardProps): JSX.
           </span>
         </p>
 
-        {/* Tags / Badges Berbingkai */}
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           <span className="rounded border border-gray-300 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-gray-700">
             {formatNumber(weightKg)} kg
@@ -108,13 +100,11 @@ function WasteCard({ item, isFavorite, onToggleFavorite }: WasteCardProps): JSX.
           )}
         </div>
 
-        {/* Deskripsi Potensi Pemanfaatan */}
         <p className="mt-2.5 text-xs sm:text-sm text-gray-600 line-clamp-2 sm:line-clamp-3 leading-relaxed">
           <span className="font-semibold text-[#273419]">Potensi: </span>
           {usage}
         </p>
 
-        {/* Footer: Harga Estimasi & Aksi */}
         <div className="mt-auto pt-4 flex items-end justify-between border-t border-gray-100 gap-2">
           <div className="min-w-0">
             <span className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-gray-400">
@@ -193,7 +183,6 @@ export default function PasarSirkular(): JSX.Element {
       <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        {/* Header */}
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-[#273419]">Pasar Sirkular</h1>
@@ -211,7 +200,6 @@ export default function PasarSirkular(): JSX.Element {
           </Link>
         </header>
 
-        {/* Alur singkat */}
         <ol className="mt-4 grid gap-2 sm:grid-cols-3">
           {CIRCULAR_STEPS.map((step, i) => (
             <li key={step.title} className="flex items-start gap-2 rounded-lg border border-gray-200 bg-white p-3">
@@ -232,7 +220,6 @@ export default function PasarSirkular(): JSX.Element {
           ))}
         </ol>
 
-        {/* Pencarian */}
         <div role="search" className="mx-auto mt-5 max-w-xl">
           <label htmlFor={searchId} className="sr-only">
             Cari jenis limbah, pemilik, lokasi, atau pemanfaatan
@@ -251,7 +238,6 @@ export default function PasarSirkular(): JSX.Element {
           </div>
         </div>
 
-        {/* Filter jenis limbah */}
         <div role="group" aria-label="Jenis limbah" className="mt-4 flex flex-wrap justify-center gap-2">
           {WASTE_FILTERS.map((f) => {
             const active = f === activeFilter;
@@ -274,7 +260,6 @@ export default function PasarSirkular(): JSX.Element {
           })}
         </div>
 
-        {/* Ringkasan hasil + toggle tersedia */}
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p role="status" aria-live="polite" className="text-sm text-gray-700">
             Menampilkan <strong className="font-semibold text-[#273419]">{visible.length}</strong> limbah

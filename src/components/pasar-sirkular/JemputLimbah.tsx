@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -41,7 +40,6 @@ function JemputLimbahContent(): JSX.Element {
     [availableListings, selectedWasteId],
   );
 
-  // Berat yang diajukan untuk dijemput (default: seluruh batch)
   const [pickupWeightKg, setPickupWeightKg] = useState<number>(() => {
     const found = availableListings.find((l) => l.id === initialId) ?? availableListings[0];
     return found.weightKg;
@@ -54,7 +52,6 @@ function JemputLimbahContent(): JSX.Element {
     setPickupWeightKg(nextListing.weightKg);
   };
 
-  // Form Data Mitra Pengolah
   const [namaInstansi, setNamaInstansi] = useState<string>("");
   const [penanggungJawab, setPenanggungJawab] = useState<string>("");
   const [noWhatsapp, setNoWhatsapp] = useState<string>("");
@@ -65,7 +62,6 @@ function JemputLimbahContent(): JSX.Element {
   const [skemaKompensasi, setSkemaKompensasi] = useState<CompensationScheme>("Tebus Tunai / Transfer");
   const [catatanLapangan, setCatatanLapangan] = useState<string>("");
 
-  // State setelah klik "Ajukan Penjemputan"
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [statusLimbah, setStatusLimbah] = useState<StatusLimbah>("Tersedia");
 
@@ -83,7 +79,6 @@ function JemputLimbahContent(): JSX.Element {
   const estimatedCompensation = pricePerKg * pickupWeightKg;
   const totalCost = estimatedCompensation + selectedFleet.cost;
 
-  // Estimasi dampak lingkungan: 1 kg limbah organik mencegah ~0.85 kg CO2e metana TPA
   const co2SavedKg = Math.round(pickupWeightKg * 0.85);
 
   const kodeTiketJemput = `JMP-SMG-00${listing.id}-2026`;
@@ -100,7 +95,6 @@ function JemputLimbahContent(): JSX.Element {
       <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
-        {/* Breadcrumb & Header */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Link
@@ -139,7 +133,6 @@ function JemputLimbahContent(): JSX.Element {
           </div>
         </div>
 
-        {/* Alur Penjemputan Limbah */}
         <section
           aria-labelledby="alur-jemput-title"
           className="mb-8 rounded-2xl border border-[#95A87A] bg-white p-4 shadow-xs sm:p-5"
@@ -216,11 +209,9 @@ function JemputLimbahContent(): JSX.Element {
           </ol>
         </section>
 
-        {/* Layout 2 Kolom: Kiri Info Batch Limbah, Kanan Form Penjemputan / Simulasi Surat Jalan */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
           <aside aria-label="Rincian batch limbah terpilih" className="lg:col-span-5">
             <div className="sticky top-20 space-y-4">
-              {/* Selector Ganti Batch Limbah */}
               <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
                 <label
                   htmlFor="pilih-limbah"
@@ -243,7 +234,6 @@ function JemputLimbahContent(): JSX.Element {
                 </select>
               </div>
 
-              {/* Kartu Detail Limbah */}
               <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-md">
                 <div className="relative flex h-48 w-full items-center justify-center bg-gray-100 overflow-hidden">
                   {listing.image ? (
@@ -291,7 +281,6 @@ function JemputLimbahContent(): JSX.Element {
                     <p className="mt-0.5 text-gray-700">{listing.usage}</p>
                   </div>
 
-                  {/* Kalkulasi Nilai Tebus & Biaya Logistik */}
                   <div className="mt-4 space-y-2 border-t border-gray-200 pt-4 text-sm">
                     <div className="flex items-center justify-between text-gray-700">
                       <span>Harga Estimasi per Kg</span>
@@ -325,7 +314,6 @@ function JemputLimbahContent(): JSX.Element {
                     </div>
                   </div>
 
-                  {/* Metrik Dampak Sirkular */}
                   <div className="mt-4 rounded-xl border border-green-700/30 bg-green-50/70 p-3 text-xs text-[#273419]">
                     <p className="font-bold text-green-900">🌱 Dampak Ekonomi Sirkular Batch Ini:</p>
                     <p className="mt-0.5 text-gray-700">
@@ -616,7 +604,6 @@ function JemputLimbahContent(): JSX.Element {
                   </div>
                 </div>
 
-                {/* Rincian Tiket Surat Jalan */}
                 <div className="grid grid-cols-1 gap-3 rounded-2xl border border-gray-200 bg-[#F8FAFC] p-4 text-xs sm:grid-cols-2">
                   <div>
                     <p className="font-bold uppercase tracking-wider text-gray-500">Mitra Pengolah (Penjemput)</p>

@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -20,6 +19,15 @@ import {
   UsersIcon,
 } from "@/components/ui/Icons";
 import { ROLE_STORAGE_KEY, type RoleSlug } from "@/data/profil";
+import { apiCall, writeSession } from "@/lib/backend";
+
+const PERAN_BY_SLUG: Record<RoleSlug, string> = {
+  petani: "Supplier",
+  umkm: "UMKM",
+  mitra: "Mitra",
+  konsumen: "Konsumen",
+  admin: "Admin",
+};
 
 type RoleFilter = "Petani" | "UMKM Kuliner" | "Pengolah Residu" | "Pembeli & Ritel" | "Admin Sistem";
 
@@ -99,16 +107,37 @@ export default function LoginPage(): JSX.Element {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(true);
 
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
   const selectedRoleData = LOGIN_ROLES.find((r) => r.id === selectedRole) ?? LOGIN_ROLES[0];
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    if (!identifier || !password) return;
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(ROLE_STORAGE_KEY, selectedRoleData.slug);
-      notifyAuthChange();
+    if (!identifier || !password || isSubmitting) return;
+    setLoginError(null);
+    setIsSubmitting(true);
+    try {
+      const res = await apiCall<{
+        data: { user: { id: number; nama: string; email: string; peran: string; statusVerifikasi: string } };
+      }>("POST", "/auth/login", { email: identifier.trim(), password });
+      const user = res.data.user;
+      const expectedPeran = PERAN_BY_SLUG[selectedRoleData.slug];
+      if (user.peran !== expectedPeran) {
+        setLoginError(`Akun ini terdaftar sebagai ${user.peran}. Pilih peran ${user.peran} untuk masuk.`);
+        return;
+      }
+      writeSession(user);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(ROLE_STORAGE_KEY, selectedRoleData.slug);
+        notifyAuthChange();
+      }
+      router.push(`/profil/${selectedRoleData.slug}`);
+    } catch (err) {
+      setLoginError(err instanceof Error ? err.message : "Login gagal. Silakan coba lagi.");
+    } finally {
+      setIsSubmitting(false);
     }
-    router.push(`/profil/${selectedRoleData.slug}`);
   };
 
   const handleGoogleLogin = (): void => {
@@ -125,7 +154,6 @@ export default function LoginPage(): JSX.Element {
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="grid grid-cols-1 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl lg:grid-cols-12">
-          {/* Kolom Kiri Branding */}
           <div className="relative flex flex-col justify-between overflow-hidden bg-gradient-to-br from-green-700 via-green-800 to-green-950 p-8 text-white sm:p-10 lg:col-span-5">
             <div
               aria-hidden="true"
@@ -194,7 +222,6 @@ export default function LoginPage(): JSX.Element {
             </div>
           </div>
 
-          {/* Kolom Formulir Masuk */}
           <div className="flex flex-col justify-center p-6 sm:p-10 lg:col-span-7">
             <div>
               <div className="mb-5 inline-flex items-center rounded-full border border-gray-200 bg-white p-1 shadow-xs">
@@ -270,7 +297,6 @@ export default function LoginPage(): JSX.Element {
                     })}
                   </div>
 
-                  {/* Keterangan Ringkas Mobile */}
                   <div className="mt-2 rounded-xl border border-emerald-100 bg-emerald-50/70 p-2.5 text-xs text-[#273419]">
                     <div className="flex items-center justify-between font-bold text-green-800">
                       <span className="flex items-center gap-1">
@@ -420,12 +446,19 @@ export default function LoginPage(): JSX.Element {
                   </label>
                 </div>
 
+                {loginError ? (
+                  <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+                    {loginError}
+                  </p>
+                ) : null}
+
                 <div className="pt-2">
                   <button
                     type="submit"
+                    disabled={isSubmitting}
                     className="w-full inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#3D5126] px-6 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#273419] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126] focus-visible:ring-offset-2"
                   >
-                    Masuk sebagai {selectedRoleData.title} ➔
+                    {isSubmitting ? "Memeriksa akun..." : `Masuk sebagai ${selectedRoleData.title} ➔`}
                   </button>
                 </div>
               </form>

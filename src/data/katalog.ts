@@ -15,16 +15,11 @@ export interface Product {
   location: string;
   stock: number;
   stockUnit: string;
-  /** Harga per satuan dalam Rupiah. */
   price: number;
   priceUnit: string;
-  /** Label singkat, mis. grade / varietas / ukuran. */
   tags: readonly string[];
-  /** Deskripsi singkat (1–2 kalimat). */
   description: string;
-  /** Lokasi aset gambar produk */
   image?: string;
-  /** Spesifikasi lengkap produk mangga */
   spesifikasi?: readonly ProductSpecItem[];
 }
 
@@ -35,7 +30,6 @@ export const CATEGORIES: readonly ProductCategory[] = [
 ];
 
 export const PRODUCTS: readonly Product[] = [
-  // Mangga Segar
   {
     id: "ms-01",
     name: "Mangga Gedong Gincu",
@@ -152,7 +146,6 @@ export const PRODUCTS: readonly Product[] = [
     ],
   },
 
-  // Olahan Mangga
   {
     id: "om-01",
     name: "Dodol Mangga Original",
@@ -257,7 +250,6 @@ export const PRODUCTS: readonly Product[] = [
     ],
   },
 
-  // Bibit Pohon
   {
     id: "bp-01",
     name: "Bibit Okulasi Gedong Gincu",

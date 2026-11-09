@@ -2,7 +2,6 @@ import type { JSX } from "react";
 import type { ProductCategory } from "@/data/katalog";
 import type { JenisLimbah } from "@/types/samangga";
 
-/** Ikon placeholder gambar produk katalog dengan visual 3D floating & bayangan. */
 export function ImagePlaceholderIcon({ category }: { category: ProductCategory }): JSX.Element {
   if (category === "Bibit Pohon") {
     return (
@@ -58,7 +57,6 @@ export function ImagePlaceholderIcon({ category }: { category: ProductCategory }
     );
   }
 
-  // Mangga Segar — visual mangga berdimensi 3D miring dengan drop shadow elegan
   return (
     <div className="relative flex items-center justify-center">
       <svg
@@ -96,7 +94,6 @@ export function ImagePlaceholderIcon({ category }: { category: ProductCategory }
   );
 }
 
-/** Ikon visual 3D floating untuk tiap jenis limbah mangga. */
 export function WasteIcon({ jenis }: { jenis: JenisLimbah }): JSX.Element {
   if (jenis === "Kulit") {
     return (
@@ -178,7 +175,6 @@ export function WasteIcon({ jenis }: { jenis: JenisLimbah }): JSX.Element {
     );
   }
 
-  // Buah Afkir
   return (
     <svg
       viewBox="0 0 100 100"

@@ -58,7 +58,6 @@ export default function PortalRoleErd(): JSX.Element {
       <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-        {/* Header Portal */}
         <header className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs sm:p-8">
           <div className="inline-flex items-center gap-2 rounded-full bg-[#3D5126]/10 px-3.5 py-1 text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
             Arsitektur 14 Tabel & 5 Peran Pengguna
@@ -73,7 +72,6 @@ export default function PortalRoleErd(): JSX.Element {
           </p>
         </header>
 
-        {/* Grid 5 Kartu Role ERD */}
         <section aria-label="Daftar halaman role ERD" className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
           {ROLE_NAVIGATION_LIST.map((role) => {
             const prof = DEFAULT_PROFILES[role.slug];
@@ -116,7 +114,6 @@ export default function PortalRoleErd(): JSX.Element {
           })}
         </section>
 
-        {/* Ringkasan 4 Klaster Tabel ERD */}
         <section aria-label="Klaster tabel ERD" className="mt-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-xs sm:p-8">
           <h2 className="text-lg font-extrabold text-[#273419]">
             Struktur 4 Klaster Domain pada Gambar ERD SAMANGGA

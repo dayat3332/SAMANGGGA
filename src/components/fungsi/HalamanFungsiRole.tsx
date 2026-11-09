@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -77,7 +76,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
 
   const [banner, setBanner] = useState<string | null>(null);
 
-  // Shared relational states for functional workflows
   const [penggunaList, setPenggunaList] = useState<Pengguna[]>(() => [...INITIAL_PENGGUNA_LIST]);
   const [produkList, setProdukList] = useState<Produk[]>(() => [...INITIAL_PRODUK_LIST]);
   const [transaksiList, setTransaksiList] = useState<Transaksi[]>(() => [...INITIAL_TRANSAKSI_LIST]);
@@ -92,14 +90,12 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
   const [keuanganList, setKeuanganList] = useState<PencatatanKeuangan[]>(() => [...INITIAL_KEUANGAN_LIST]);
   const [logList, setLogList] = useState<LogSistem[]>(() => [...INITIAL_LOG_SISTEM_LIST]);
 
-  // Supplier Functional State: Pasang Panen Baru
   const [panenNama, setPanenNama] = useState<string>("");
   const [panenHarga, setPanenHarga] = useState<number>(1350000);
   const [panenStok, setPanenStok] = useState<number>(35);
   const [panenSatuan, setPanenSatuan] = useState<string>("Kwintal");
   const [panenDeskripsi, setPanenDeskripsi] = useState<string>("");
 
-  // UMKM Functional State: Setor Limbah & Beli Bahan Baku
   const [setorJenis, setSetorJenis] = useState<JenisLimbahErd>("Kulit");
   const [setorBerat, setSetorBerat] = useState<number>(150);
   const [setorKompensasi, setSetorKompensasi] = useState<JenisKompensasi>("Jual Beli");
@@ -109,13 +105,11 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
   );
   const [setorKoordinat, setSetorKoordinat] = useState<string>("-6.327510, 108.324900");
 
-  // Konsumen Functional State: Checkout Belanja Produk
   const [selectedProdukId, setSelectedProdukId] = useState<number>(1001);
   const [orderQty, setOrderQty] = useState<number>(2);
   const [orderMetode, setOrderMetode] = useState<MetodePembayaran>("QRIS");
   const [orderBukti, setOrderBukti] = useState<string>("bukti_transfer_konsumen.jpg");
 
-  // Admin Functional State: Tingkat Akses
   const [tingkatAkses, setTingkatAkses] = useState<TingkatAkses>("Super Admin");
   const [filterLog, setFilterLog] = useState<"Semua" | LevelLog>("Semua");
 
@@ -154,7 +148,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
     notify(`✓ Hasil panen "${created.nama_produk}" berhasil diajukan ke Katalog (Status: Menunggu Verifikasi Admin).`);
   };
 
-  // Konfirmasi transfer manual
   const handleKonfirmasiTransferManual = (idTransaksi: number): void => {
     const now = new Date().toISOString().replace("T", " ").slice(0, 19);
     const trx = transaksiList.find((t) => t.id_transaksi === idTransaksi);
@@ -186,7 +179,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
     notify(`✓ Bukti Transfer Manual pesanan #${idTransaksi} telah dikonfirmasi! Pesanan kini Diproses & tercatat di Buku Kas.`);
   };
 
-  // Setor limbah UMKM
   const handleUmkmSetorLimbah = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     const now = new Date().toISOString().replace("T", " ").slice(0, 19);
@@ -212,7 +204,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
     notify(`✓ Batch Limbah #${nextId} (${setorJenis} · ${setorBerat} kg · ${setorKompensasi}) berhasil didaftarkan ke Pasar Sirkular!`);
   };
 
-  // Pengadaan bahan baku
   const handleUmkmBeliBahanBaku = (prod: Produk, qty: number): void => {
     const now = new Date().toISOString().replace("T", " ").slice(0, 19);
     const nextTrxId = transaksiList.reduce((max, t) => Math.max(max, t.id_transaksi), 5000) + 1;
@@ -258,7 +249,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
     notify(`✓ Pengadaan bahan baku ${qty} ${prod.satuan} "${prod.nama_produk}" (Transaksi #${nextTrxId}) berhasil dibuat!`);
   };
 
-  // 4b. Fungsi Supplier: Beli Pupuk Kompos & Bibit Pohon dari Mitra (Ekonomi Sirkular)
   const handleSupplierBeliSirkular = (prod: Produk, qty: number): void => {
     const now = new Date().toISOString().replace("T", " ").slice(0, 19);
     const nextTrxId = transaksiList.reduce((max, t) => Math.max(max, t.id_transaksi), 5000) + 1;
@@ -306,7 +296,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
     );
   };
 
-  // Penjemputan limbah
   const handleMitraTahapJemput = (idLimbah: number, nextStatus: StatusJemput): void => {
     const now = new Date().toISOString().replace("T", " ").slice(0, 19);
     const target = limbahList.find((l) => l.id_limbah === idLimbah);
@@ -370,7 +359,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
     notify(`✓ Status Pengiriman Resi ${ship.no_resi_lacak} diperbarui ke "${nextStatus}".`);
   };
 
-  // Checkout pesanan konsumen
   const handleKonsumenCheckout = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     const prod = produkList.find((p) => p.id_produk === selectedProdukId) ?? produkList[0];
@@ -433,7 +421,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
     );
   };
 
-  // Moderasi admin
   const handleVerifikasi = (
     tipe: "pengguna" | "produk" | "limbah",
     id: number,
@@ -474,7 +461,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
     <div className="min-h-screen bg-[#F8FAFC] text-[#273419]">
       <Navbar />
 
-      {/* Sub-Navbar Kontekstual 1 Role Tetap (Sesuai ERD) & Pintasan ke Dashboard CRUD (Navbar Kiri) */}
       <div className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex flex-wrap items-center gap-2">
@@ -515,7 +501,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
       </div>
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        {/* Hero Banner Halaman Fungsi Role */}
         <section className="mb-8 rounded-3xl bg-gradient-to-br from-[#384A23] via-[#2D3B1C] to-[#1E2813] p-6 text-white shadow-md sm:p-8">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div>
@@ -562,10 +547,8 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
           </div>
         )}
 
-        {/* Supplier Views */}
         {currentRole === "petani" && (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-            {/* Kiri: Form Pasang Panen Buah */}
             <div className="lg:col-span-5">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -645,7 +628,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
               </div>
             </div>
 
-            {/* Kanan: Verifikasi Bukti Transfer Pembeli & Daftar Komoditas Aktif */}
             <div className="lg:col-span-7 space-y-6">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -755,7 +737,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
                 </div>
               </div>
 
-              {/* Fungsi 4: Beli Pupuk Kompos & Bibit Pohon dari Mitra (id_pembeli = #101) */}
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
@@ -810,10 +791,8 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
           </div>
         )}
 
-        {/* UMKM Views */}
         {currentRole === "umkm" && (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-            {/* Kiri: Wizard Setor Limbah Produksi UMKM */}
             <div className="lg:col-span-5">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -909,7 +888,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
               </div>
             </div>
 
-            {/* Kanan: Pengadaan Bahan Baku dari Supplier & Status Jemput Limbah */}
             <div className="lg:col-span-7 space-y-6">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -1002,10 +980,8 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
           </div>
         )}
 
-        {/* Mitra Views */}
         {currentRole === "mitra" && (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-            {/* Kolom 1: Bursa & Penjemputan Limbah UMKM */}
             <div className="lg:col-span-7 space-y-6">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <div className="flex items-center justify-between">
@@ -1090,7 +1066,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
               </div>
             </div>
 
-            {/* Kolom 2: Terminal Kurir Pengiriman Mitra */}
             <div className="lg:col-span-5 space-y-6">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -1144,10 +1119,8 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
           </div>
         )}
 
-        {/* Konsumen Views */}
         {currentRole === "konsumen" && (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-            {/* Kiri: Form Belanja & Checkout Konsumen */}
             <div className="lg:col-span-5">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -1174,7 +1147,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
                         ))}
                     </select>
 
-                    {/* Preview Gambar & Detail Produk Terpilih */}
                     {(() => {
                       const selectedProd = produkList.find((p) => p.id_produk === selectedProdukId);
                       if (!selectedProd) return null;
@@ -1250,7 +1222,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
               </div>
             </div>
 
-            {/* Kanan: Lacak Pesanan & Riwayat Pengiriman Konsumen */}
             <div className="lg:col-span-7 space-y-6">
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -1335,10 +1306,8 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
           </div>
         )}
 
-        {/* Admin Views */}
         {currentRole === "admin" && (
           <div className="space-y-6">
-            {/* Switcher Tingkat Akses Admin */}
             <div className="flex flex-col justify-between gap-3 rounded-3xl border border-gray-200 bg-white p-5 shadow-xs sm:flex-row sm:items-center">
               <div>
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
@@ -1367,7 +1336,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {/* Panel Verifikasi Akun & Produk */}
               {(tingkatAkses === "Super Admin" || tingkatAkses === "Admin Transaksi") && (
                 <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs space-y-4">
                   <h3 className="text-base font-extrabold text-[#273419]">
@@ -1441,7 +1409,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
                 </div>
               )}
 
-              {/* Panel Verifikasi Limbah & Monitor Log Sistem */}
               <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-extrabold text-[#273419]">
@@ -1514,7 +1481,6 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
           </div>
         )}
 
-        {/* Ringkasan Arus Kas Terbaru Role Ini (Tabel Pencatatan Keuangan) */}
         {currentRole !== "admin" && (
           <section className="mt-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
             <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">

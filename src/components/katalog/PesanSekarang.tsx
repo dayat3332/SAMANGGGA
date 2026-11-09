@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -33,7 +32,6 @@ import {
 import { formatRupiah } from "@/lib/format";
 import type { MetodePembayaran } from "@/types/samangga";
 
-/** Alias pemetaan ID numeric atau alternatif ke ID katalog resmi */
 const PRODUCT_ID_ALIAS_MAP: Record<string, string> = {
   "1001": "ms-01",
   "1002": "ms-02",
@@ -114,14 +112,11 @@ function PesanSekarangContent(): JSX.Element {
   const queryQtyRaw = searchParams.get("qty");
   const queryQty = queryQtyRaw ? Math.max(1, parseInt(queryQtyRaw, 10) || 1) : 1;
 
-  // Profil pengguna yang sedang login
   const activeRole = useSyncExternalStore(subscribeAuth, getAuthSnapshot, getServerAuthSnapshot);
   const userProfile = activeRole ? DEFAULT_PROFILES[activeRole] : null;
 
-  // Baca keranjang jika ada
   const cartItems = useSyncExternalStore(subscribeCart, getCartItems, getServerCartItems);
 
-  // Tentukan item apa yang sedang di-checkout
   const checkoutItems = useMemo<CheckoutItem[]>(() => {
     if (queryProd) {
       const prodId = resolveProductId(queryProd);
@@ -153,7 +148,6 @@ function PesanSekarangContent(): JSX.Element {
         image: c.image,
       }));
     }
-    // Fallback ke produk pertama
     const p = PRODUCTS[0];
     return [
       {
@@ -170,14 +164,9 @@ function PesanSekarangContent(): JSX.Element {
     ];
   }, [queryProd, queryQty, cartItems]);
 
-  // Alur Pemesanan Sesuai Permintaan User:
-  // Tahap 1: Pilih menu mau COD atau PAKET
-  // - Jika COD: Langsung ke Pembayaran -> Selesai / Tunjukkan & Scan Nota ke Kasir
-  // - Jika PAKET: Tahap 2 isi alamat -> Tahap 3 Pembayaran -> Tahap 4 Selesai / Resi
   const [orderType, setOrderType] = useState<OrderType>("cod");
   const [step, setStep] = useState<number>(1);
 
-  // Address details state
   const [firstName, setFirstName] = useState<string>(() =>
     userProfile?.nama_lengkap ? userProfile.nama_lengkap.split(" ")[0] : "Mateusz",
   );
@@ -197,7 +186,6 @@ function PesanSekarangContent(): JSX.Element {
   );
   const [useDeliveryAsBilling, setUseDeliveryAsBilling] = useState<boolean>(true);
 
-  // Delivery method pilihan (untuk paket)
   const [selectedCourierId, setSelectedCourierId] = useState<string>("ekspedisi-kargo");
   const selectedCourier: CourierOption = useMemo(() => {
     if (orderType === "cod") {
@@ -215,13 +203,11 @@ function PesanSekarangContent(): JSX.Element {
     return COURIER_OPTIONS.find((c) => c.id === selectedCourierId) ?? COURIER_OPTIONS[1];
   }, [orderType, selectedCourierId]);
 
-  // Payment method pilihan
   const [metodePembayaran, setMetodePembayaran] = useState<MetodePembayaran | "Kasir COD">("Kasir COD");
   const [buktiTransferName, setBuktiTransferName] = useState<string>("");
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
   const [orderNumber] = useState<string>("SMG-892145");
 
-  // Kalkulasi Harga
   const subtotal = useMemo(
     () => checkoutItems.reduce((acc, item) => acc + item.price * item.quantity, 0),
     [checkoutItems],
@@ -233,14 +219,11 @@ function PesanSekarangContent(): JSX.Element {
   const shippingCost = orderType === "cod" ? 0 : selectedCourier.cost;
   const grandTotal = subtotal + shippingCost;
 
-  // Navigasi Langkah
   const handleNextFromMenu = (): void => {
     if (orderType === "cod") {
-      // COD: Langsung ke tahap Pembayaran / Konfirmasi Kasir
       setMetodePembayaran("Kasir COD");
       setStep(2);
     } else {
-      // PAKET: Ke tahap 2 isi alamat
       setMetodePembayaran("QRIS");
       setStep(2);
     }
@@ -249,7 +232,7 @@ function PesanSekarangContent(): JSX.Element {
 
   const handleNextFromAddress = (e: FormEvent): void => {
     e.preventDefault();
-    setStep(3); // Masuk ke pembayaran untuk mode PAKET
+    setStep(3);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -258,9 +241,9 @@ function PesanSekarangContent(): JSX.Element {
       clearCart();
     }
     if (orderType === "cod") {
-      setStep(3); // Selesai / Nota Kasir COD
+      setStep(3);
     } else {
-      setStep(4); // Selesai / Resi Paket
+      setStep(4);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -275,9 +258,6 @@ function PesanSekarangContent(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-[#F4F6F9] text-[#273419]">
-      {/* ========================================================================= */}
-      {/* TOP HEADER: BRAND + BACK TO SHOPPING CART */}
-      {/* ========================================================================= */}
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link
@@ -299,16 +279,11 @@ function PesanSekarangContent(): JSX.Element {
         </div>
       </header>
 
-      {/* ========================================================================= */}
-      {/* STEPPER PROGRESS TRACKER DINAMIS SESUAI OPSI (COD vs PAKET) */}
-      {/* ========================================================================= */}
       <nav aria-label="Alur Checkout" className="border-b border-gray-200/80 bg-white/70 backdrop-blur-xs py-5 sm:py-6">
         <div className="mx-auto max-w-3xl px-4">
           <div className="relative flex items-center justify-between">
-            {/* Background Connector Line */}
             <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-0.5 bg-gray-200 z-0" />
 
-            {/* Step 1: PILIH METODE (COD / PAKET) */}
             <div className="relative z-10 flex flex-col items-center">
               <div
                 className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full transition-all ${
@@ -328,7 +303,6 @@ function PesanSekarangContent(): JSX.Element {
               </span>
             </div>
 
-            {/* Jika Order Type == PAKET: Ada Step 2 ISI ALAMAT */}
             {orderType === "paket" && (
               <div className="relative z-10 flex flex-col items-center">
                 <div
@@ -356,7 +330,6 @@ function PesanSekarangContent(): JSX.Element {
               </div>
             )}
 
-            {/* Step Pembayaran */}
             <div className="relative z-10 flex flex-col items-center">
               <div
                 className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full transition-all ${
@@ -392,7 +365,6 @@ function PesanSekarangContent(): JSX.Element {
               </span>
             </div>
 
-            {/* Step Selesai: Nota Kasir (COD) / Konfirmasi Resi (Paket) */}
             <div className="relative z-10 flex flex-col items-center">
               <div
                 className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full transition-all ${
@@ -421,18 +393,9 @@ function PesanSekarangContent(): JSX.Element {
         </div>
       </nav>
 
-      {/* ========================================================================= */}
-      {/* 2-COLUMN MAIN CONTENT AREA */}
-      {/* ========================================================================= */}
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* ===================================================================== */}
-          {/* KOLOM KIRI: FORM & TAHAPAN CHECKOUT */}
-          {/* ===================================================================== */}
           <div className="lg:col-span-7 xl:col-span-8">
-            {/* ------------------------------------------------------------------- */}
-            {/* TAHAP 1: PILIH MENU MAU COD ATAU PAKET */}
-            {/* ------------------------------------------------------------------- */}
             {step === 1 && (
               <div className="rounded-2xl border border-gray-200/90 bg-white p-6 sm:p-8 shadow-sm">
                 <header>
@@ -448,7 +411,6 @@ function PesanSekarangContent(): JSX.Element {
                 </header>
 
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Kartu Pilihan 1: COD (Ambil di Tempat & Kasir) */}
                   <div
                     role="button"
                     tabIndex={0}
@@ -486,7 +448,6 @@ function PesanSekarangContent(): JSX.Element {
                     </div>
                   </div>
 
-                  {/* Kartu Pilihan 2: PAKET (Kirim ke Alamat) */}
                   <div
                     role="button"
                     tabIndex={0}
@@ -525,7 +486,6 @@ function PesanSekarangContent(): JSX.Element {
                   </div>
                 </div>
 
-                {/* Footer Action Buttons */}
                 <div className="mt-8 pt-6 border-t border-gray-200 flex items-center justify-between">
                   <button
                     type="button"
@@ -546,9 +506,6 @@ function PesanSekarangContent(): JSX.Element {
               </div>
             )}
 
-            {/* ------------------------------------------------------------------- */}
-            {/* TAHAP 2 KHUSUS MODE PAKET: ISI ALAMAT PENGIRIMAN */}
-            {/* ------------------------------------------------------------------- */}
             {orderType === "paket" && step === 2 && (
               <div className="rounded-2xl border border-gray-200/90 bg-white p-6 sm:p-8 shadow-sm">
                 <header>
@@ -568,7 +525,6 @@ function PesanSekarangContent(): JSX.Element {
                     <h2 className="text-base font-bold text-gray-900">Delivery address</h2>
 
                     <div className="mt-4 space-y-4">
-                      {/* First Name & Second Name */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label
@@ -606,7 +562,6 @@ function PesanSekarangContent(): JSX.Element {
                         </div>
                       </div>
 
-                      {/* Street Address */}
                       <div>
                         <label
                           htmlFor="streetAddress"
@@ -625,7 +580,6 @@ function PesanSekarangContent(): JSX.Element {
                         />
                       </div>
 
-                      {/* City & Zip Code */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label
@@ -663,7 +617,6 @@ function PesanSekarangContent(): JSX.Element {
                         </div>
                       </div>
 
-                      {/* Country */}
                       <div>
                         <label
                           htmlFor="country"
@@ -684,7 +637,6 @@ function PesanSekarangContent(): JSX.Element {
                         </select>
                       </div>
 
-                      {/* Phone Number */}
                       <div>
                         <label
                           htmlFor="phoneNumber"
@@ -708,7 +660,6 @@ function PesanSekarangContent(): JSX.Element {
                     </div>
                   </div>
 
-                  {/* Billing Address Section */}
                   <div className="pt-4 border-t border-gray-100">
                     <h2 className="text-base font-bold text-gray-900">Billing address</h2>
                     <label className="mt-3 flex items-center gap-2.5 text-xs sm:text-sm font-medium text-gray-700 cursor-pointer select-none">
@@ -722,12 +673,10 @@ function PesanSekarangContent(): JSX.Element {
                     </label>
                   </div>
 
-                  {/* Delivery Method Cards (Kurir Paket) */}
                   <div className="pt-4 border-t border-gray-100">
                     <h2 className="text-base font-bold text-gray-900">Delivery method</h2>
 
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* Opsi 1: SAMANGGA Cold Fleet */}
                       <div
                         role="button"
                         tabIndex={0}
@@ -769,7 +718,6 @@ function PesanSekarangContent(): JSX.Element {
                         </div>
                       </div>
 
-                      {/* Opsi 2: FEDEX / JNE Kargo (Default Selected) */}
                       <div
                         role="button"
                         tabIndex={0}
@@ -813,7 +761,6 @@ function PesanSekarangContent(): JSX.Element {
                     </div>
                   </div>
 
-                  {/* Footer Action Buttons */}
                   <div className="pt-6 border-t border-gray-200 flex items-center justify-between">
                     <button
                       type="button"
@@ -834,9 +781,6 @@ function PesanSekarangContent(): JSX.Element {
               </div>
             )}
 
-            {/* ------------------------------------------------------------------- */}
-            {/* TAHAP PEMBAYARAN (STEP 2 untuk COD, STEP 3 untuk PAKET) */}
-            {/* ------------------------------------------------------------------- */}
             {((orderType === "cod" && step === 2) || (orderType === "paket" && step === 3)) && (
               <div className="rounded-2xl border border-gray-200/90 bg-white p-6 sm:p-8 shadow-sm">
                 <header>
@@ -854,7 +798,6 @@ function PesanSekarangContent(): JSX.Element {
                 </header>
 
                 <div className="mt-6 space-y-4">
-                  {/* Opsi Khusus COD: Bayar Tunai / QRIS di Kasir saat Ambil */}
                   {orderType === "cod" && (
                     <div
                       role="button"
@@ -894,7 +837,6 @@ function PesanSekarangContent(): JSX.Element {
                     </div>
                   )}
 
-                  {/* Opsi-opsi Pembayaran Elektronik (QRIS & VA) */}
                   {PAYMENT_OPTIONS.map((pay) => {
                     const active = metodePembayaran === pay.method;
                     return (
@@ -935,7 +877,6 @@ function PesanSekarangContent(): JSX.Element {
                   })}
                 </div>
 
-                {/* Box Detail Instruksi Pembayaran Sesuai Kanal */}
                 <div className="mt-6 rounded-xl border border-gray-200 bg-[#F8FAFC] p-4 text-xs">
                   {metodePembayaran === "Kasir COD" && (
                     <div className="p-3 text-center sm:text-left space-y-2">
@@ -1035,7 +976,6 @@ function PesanSekarangContent(): JSX.Element {
                   )}
                 </div>
 
-                {/* Footer Action Buttons */}
                 <div className="mt-8 pt-6 border-t border-gray-200 flex items-center justify-between">
                   <button
                     type="button"
@@ -1056,9 +996,6 @@ function PesanSekarangContent(): JSX.Element {
               </div>
             )}
 
-            {/* ------------------------------------------------------------------- */}
-            {/* TAHAP AKHIR COD: NOTA KASIR RESMI UNTUK DITUNJUKKAN / DISCAN */}
-            {/* ------------------------------------------------------------------- */}
             {orderType === "cod" && step === 3 && (
               <div className="rounded-2xl border-2 border-[#3D5126] bg-white p-6 sm:p-8 shadow-lg">
                 <div className="border-b-2 border-dashed border-gray-200 pb-5 text-center">
@@ -1076,7 +1013,6 @@ function PesanSekarangContent(): JSX.Element {
                   </p>
                 </div>
 
-                {/* Banner Instruksi Kasir */}
                 <div className="mt-5 rounded-xl bg-amber-50 border border-amber-200 p-4 text-center">
                   <p className="text-xs font-extrabold text-amber-900">
                     💡 PAS DATANG KE KASIR MITRA:
@@ -1086,9 +1022,7 @@ function PesanSekarangContent(): JSX.Element {
                   </p>
                 </div>
 
-                {/* Tampilan Barcode & QR Code Kasir */}
                 <div className="mt-5 flex flex-col sm:flex-row items-center justify-around gap-6 rounded-2xl border border-gray-200 bg-[#F8FAFC] p-6">
-                  {/* QR Code Kasir */}
                   <div className="flex flex-col items-center text-center">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                       SCAN QR NOTA KASIR
@@ -1116,13 +1050,11 @@ function PesanSekarangContent(): JSX.Element {
                     </span>
                   </div>
 
-                  {/* Barcode Visual */}
                   <div className="flex flex-col items-center text-center">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                       BARCODE SCANNER KASIR
                     </span>
                     <div className="flex flex-col items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-3 shadow-xs">
-                      {/* Barcode Stripes SVG */}
                       <svg viewBox="0 0 160 50" className="h-12 w-44 text-gray-900">
                         <rect x="4" y="0" width="4" height="50" fill="currentColor" />
                         <rect x="12" y="0" width="2" height="50" fill="currentColor" />
@@ -1155,7 +1087,6 @@ function PesanSekarangContent(): JSX.Element {
                   </div>
                 </div>
 
-                {/* Detail Nota */}
                 <div className="mt-5 space-y-2 border-t border-gray-200 pt-4 text-xs">
                   <div className="flex justify-between border-b border-gray-100 pb-1.5">
                     <span className="font-bold text-gray-500 uppercase">Lokasi Pengambilan</span>
@@ -1177,7 +1108,6 @@ function PesanSekarangContent(): JSX.Element {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
                 <div className="mt-6 flex flex-wrap gap-3 justify-center">
                   <button
                     type="button"
@@ -1206,9 +1136,6 @@ function PesanSekarangContent(): JSX.Element {
               </div>
             )}
 
-            {/* ------------------------------------------------------------------- */}
-            {/* TAHAP AKHIR PAKET: KONFIRMASI PENGIRIMAN & RESI */}
-            {/* ------------------------------------------------------------------- */}
             {orderType === "paket" && step === 4 && (
               <div className="rounded-2xl border border-gray-200/90 bg-white p-6 sm:p-8 shadow-sm">
                 <div className="flex flex-col items-center text-center py-4">
@@ -1281,11 +1208,7 @@ function PesanSekarangContent(): JSX.Element {
             )}
           </div>
 
-          {/* ===================================================================== */}
-          {/* KOLOM KANAN: ORDER SUMMARY & WIDGETS */}
-          {/* ===================================================================== */}
           <aside className="lg:col-span-5 xl:col-span-4 space-y-6">
-            {/* Card 1: Order Summary */}
             <div className="rounded-2xl border border-gray-200/90 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-extrabold text-gray-900">Order summary</h2>
@@ -1294,14 +1217,12 @@ function PesanSekarangContent(): JSX.Element {
                 </span>
               </div>
 
-              {/* Tabel Header Produk */}
               <div className="mt-4 flex items-center justify-between border-b border-gray-200 pb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
                 <span className="flex-1">PRODUCT</span>
                 <span className="w-12 text-center">QTY</span>
                 <span className="w-20 text-right">PRICE</span>
               </div>
 
-              {/* Daftar Item Checkout */}
               <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
                 {checkoutItems.length === 0 ? (
                   <div className="py-6 text-center text-xs text-gray-500">
@@ -1340,7 +1261,6 @@ function PesanSekarangContent(): JSX.Element {
                         </p>
                       </div>
 
-                      {/* Kontrol Tambah/Kurang QTY */}
                       <div className="inline-flex items-center rounded-lg border border-gray-200 bg-gray-50">
                         <button
                           type="button"
@@ -1363,12 +1283,10 @@ function PesanSekarangContent(): JSX.Element {
                         </button>
                       </div>
 
-                      {/* Total Harga Item */}
                       <span className="w-16 text-right text-xs font-bold text-gray-900 truncate">
                         {formatRupiah(item.price * item.quantity)}
                       </span>
 
-                      {/* Tombol Hapus Barang */}
                       <button
                         type="button"
                         onClick={() => removeFromCart(item.id)}
@@ -1382,7 +1300,6 @@ function PesanSekarangContent(): JSX.Element {
                 )}
               </div>
 
-              {/* Subtotal & Shipping Cost */}
               <div className="mt-4 space-y-2 border-t border-gray-200 pt-3 text-xs text-gray-600">
                 <div className="flex items-center justify-between">
                   <span>Subtotal ({totalItemCount} items)</span>
@@ -1398,7 +1315,6 @@ function PesanSekarangContent(): JSX.Element {
                 </div>
               </div>
 
-              {/* Grand Total */}
               <div className="mt-3 flex items-baseline justify-between border-t border-gray-200 pt-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-900">Total</span>
                 <span className="text-xl font-extrabold text-gray-900">
@@ -1407,7 +1323,6 @@ function PesanSekarangContent(): JSX.Element {
               </div>
             </div>
 
-            {/* Card 2: Need help? Contact us! */}
             <div className="rounded-2xl border border-gray-200/90 bg-white p-5 shadow-sm">
               <h3 className="text-xs font-bold uppercase tracking-wider text-gray-900">
                 Need help? Contact us!
@@ -1422,7 +1337,6 @@ function PesanSekarangContent(): JSX.Element {
               </div>
             </div>
 
-            {/* Card 3: Delivery methods Badges */}
             <div>
               <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">
                 Delivery methods
@@ -1440,7 +1354,6 @@ function PesanSekarangContent(): JSX.Element {
               </div>
             </div>
 
-            {/* Card 4: Payment methods Badges */}
             <div>
               <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">
                 Payment methods
@@ -1463,9 +1376,6 @@ function PesanSekarangContent(): JSX.Element {
           </aside>
         </div>
 
-        {/* ======================================================================= */}
-        {/* BOTTOM SECTION: 3 TRUST BADGES */}
-        {/* ======================================================================= */}
         <section aria-label="Jaminan Belanja" className="mt-14 border-t border-gray-200 pt-10">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center sm:text-left">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
@@ -1506,7 +1416,6 @@ function PesanSekarangContent(): JSX.Element {
           </div>
         </section>
 
-        {/* Footer Copyright */}
         <footer className="mt-12 text-center text-xs text-gray-400">
           © SAMANGGA - Sistem Agribisnis Mangga Terpadu 2026
         </footer>

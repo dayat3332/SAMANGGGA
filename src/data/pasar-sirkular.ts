@@ -5,18 +5,14 @@ export type FilterJenis = "Semua" | JenisLimbah;
 export interface WasteListing {
   id: number;
   jenis: JenisLimbah;
-  /** Nama pemilik limbah (petani / UMKM). */
   owner: string;
   location: string;
   weightKg: number;
-  /** Estimasi harga total untuk seluruh berat (Rupiah). */
   estimatedPrice: number;
   condition: string;
   verification: StatusVerifikasi;
   status: Extract<StatusLimbah, "Tersedia" | "Dipesan">;
-  /** Saran pemanfaatan untuk membantu calon pembeli/mitra. */
   usage: string;
-  /** Lokasi aset gambar limbah */
   image?: string;
 }
 

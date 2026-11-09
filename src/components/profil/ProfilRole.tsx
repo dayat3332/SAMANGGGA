@@ -1,8 +1,8 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { apiCall, pesananToState, readSession } from "@/lib/backend";
 import type { FormEvent, JSX } from "react";
 import {
   ArrowRightIcon,
@@ -372,7 +372,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // State data
   const [profiles, setProfiles] = useState<Record<RoleSlug, AnyRoleProfile>>(DEFAULT_PROFILES);
   const [penggunaList, setPenggunaList] = useState<Pengguna[]>(() => [...INITIAL_PENGGUNA_LIST]);
   const [produkList, setProdukList] = useState<Produk[]>(() => [...INITIAL_PRODUK_LIST]);
@@ -389,6 +388,66 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   const [logList, setLogList] = useState<LogSistem[]>(() => [...INITIAL_LOG_SISTEM_LIST]);
 
   const profile = profiles[currentRole];
+
+  const apiBasePath: string | null = currentRole === "petani" ? "/supplier" : currentRole === "konsumen" ? "/konsumen" : null;
+  const apiPeran: string | null = currentRole === "petani" ? "Supplier" : currentRole === "konsumen" ? "Konsumen" : null;
+  const [apiUserId, setApiUserId] = useState<number | null>(null);
+  const apiReady = apiUserId !== null && apiBasePath !== null;
+
+  const refreshFromApi = async (uid: number, basePath: string): Promise<void> => {
+    try {
+      const produkPath = basePath === "/supplier" ? `/supplier/produk/${uid}` : "/konsumen/katalog";
+      const [prof, produk, pesanan, keuangan] = await Promise.all([
+        apiCall("GET", `${basePath}/profil/${uid}`),
+        apiCall("GET", produkPath),
+        apiCall("GET", `${basePath}/pesanan/${uid}`),
+        apiCall("GET", `${basePath}/keuangan/${uid}`),
+      ]);
+      setProfiles((prev) => ({ ...prev, [currentRole]: { ...prev[currentRole], ...prof.data } as AnyRoleProfile }));
+      setProdukList(produk.data);
+      const t = pesananToState(pesanan.data);
+      setTransaksiList(t.transaksi);
+      setDetailTransaksiList(t.detail);
+      setPembayaranList(t.pembayaran);
+      setPengirimanList(t.pengiriman);
+      setKeuanganList(keuangan.data.data);
+    } catch (err) {
+      showToast(`✗ ${err instanceof Error ? err.message : "Gagal memuat data dari server."}`);
+    }
+  };
+
+  useEffect(() => {
+    const s = readSession();
+    if (!s || !apiBasePath || !apiPeran || s.peran !== apiPeran) {
+      setApiUserId(null);
+      return;
+    }
+    setApiUserId(s.id);
+    void refreshFromApi(s.id, apiBasePath);
+  }, [currentRole]);
+
+  const runApi = async (task: () => Promise<unknown>, successMsg: string): Promise<boolean> => {
+    try {
+      await task();
+    } catch (err) {
+      showToast(`✗ ${err instanceof Error ? err.message : "Terjadi kesalahan."}`);
+      return false;
+    }
+    showToast(successMsg);
+    if (apiUserId !== null && apiBasePath) await refreshFromApi(apiUserId, apiBasePath);
+    return true;
+  };
+
+  const buildProfilPayload = (): Record<string, unknown> => {
+    const src = profile as unknown as Record<string, unknown>;
+    const keys = [
+      "nama_lengkap", "alamat", "no_telp", "tipe_supplier", "luas_lahan_m2", "jenis_komoditas_utama",
+      "nama_bank", "no_rekening", "kategori_konsumen", "alamat_pengiriman_utama", "titik_koordinat",
+    ];
+    const out: Record<string, unknown> = {};
+    for (const k of keys) if (src[k] !== undefined && src[k] !== null) out[k] = src[k];
+    return out;
+  };
 
   const showToast = (msg: string): void => {
     setToastMessage(msg);
@@ -420,7 +479,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     return u ? u.nama_lengkap : `User #${idUser}`;
   };
 
-  // Produk
   const [isProdukFormOpen, setIsProdukFormOpen] = useState<boolean>(false);
   const [editingProdukId, setEditingProdukId] = useState<number | null>(null);
   const [formProduk, setFormProduk] = useState<{
@@ -473,8 +531,24 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     setIsProdukFormOpen(true);
   };
 
-  const handleSaveProduk = (e: FormEvent<HTMLFormElement>): void => {
+  const handleSaveProduk = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
+    if (apiReady && apiBasePath === "/supplier") {
+      const uid = apiUserId as number;
+      const editId = editingProdukId;
+      const ok = await runApi(
+        () =>
+          editId !== null
+            ? apiCall("PUT", `/supplier/produk/${editId}`, { id_user: uid, ...formProduk })
+            : apiCall("POST", "/supplier/produk", { id_user: uid, ...formProduk }),
+        editId !== null ? `✓ Komoditas #${editId} berhasil diperbarui.` : `✓ Komoditas ${formProduk.nama_produk} berhasil ditambahkan.`,
+      );
+      if (ok) {
+        setIsProdukFormOpen(false);
+        setEditingProdukId(null);
+      }
+      return;
+    }
     if (editingProdukId !== null) {
       setProdukList((prev) =>
         prev.map((p) => (p.id_produk === editingProdukId ? { ...p, ...formProduk } : p)),
@@ -496,14 +570,18 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     setEditingProdukId(null);
   };
 
-  const handleDeleteProduk = (idProduk: number): void => {
+  const handleDeleteProduk = async (idProduk: number): Promise<void> => {
+    if (apiReady && apiBasePath === "/supplier") {
+      const uid = apiUserId as number;
+      await runApi(() => apiCall("DELETE", `/supplier/produk/${idProduk}`, { id_user: uid }), `✓ Komoditas #${idProduk} berhasil dihapus.`);
+      return;
+    }
     const target = produkList.find((p) => p.id_produk === idProduk);
     setProdukList((prev) => prev.filter((p) => p.id_produk !== idProduk));
     addLog("DELETE_PRODUK", `DELETE /api/produk/${idProduk}`, `Menghapus produk #${idProduk} (${target?.nama_produk ?? ""}).`, "Warning");
     showToast(`✓ Produk #${idProduk} berhasil dihapus.`);
   };
 
-  // Limbah
   const [isLimbahFormOpen, setIsLimbahFormOpen] = useState<boolean>(false);
   const [editingLimbahId, setEditingLimbahId] = useState<number | null>(null);
   const [formLimbah, setFormLimbah] = useState<{
@@ -621,7 +699,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     showToast(`✓ Data Limbah #${idLimbah} berhasil dihapus.`);
   };
 
-  // Transaksi & Pembayaran
   const [isTransaksiFormOpen, setIsTransaksiFormOpen] = useState<boolean>(false);
   const [editingTransaksiId, setEditingTransaksiId] = useState<number | null>(null);
   const [formTransaksi, setFormTransaksi] = useState<{
@@ -668,8 +745,44 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     setIsTransaksiFormOpen(true);
   };
 
-  const handleSaveTransaksi = (e: FormEvent<HTMLFormElement>): void => {
+  const handleSaveTransaksi = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
+    if (apiReady && apiBasePath) {
+      const uid = apiUserId as number;
+      const base = apiBasePath;
+      const editId = editingTransaksiId;
+      const ok = await runApi(
+        async () => {
+          if (editId === null) {
+            if (base !== "/konsumen") throw new Error("Pembuatan transaksi baru hanya tersedia untuk akun konsumen.");
+            const created = await apiCall("POST", "/konsumen/pesanan", {
+              id_user: uid,
+              items: [{ id_produk: formTransaksi.id_produk, jumlah_produk: formTransaksi.jumlah_produk }],
+              metode_pembayaran: formTransaksi.metode_pembayaran,
+            });
+            if (formTransaksi.status_pembayaran === "Berhasil") {
+              for (const trx of created.data as { id_transaksi: number }[]) {
+                await apiCall("PUT", `/konsumen/pesanan/${trx.id_transaksi}/bayar`, { id_user: uid });
+              }
+            }
+            return;
+          }
+          if (base === "/konsumen" && formTransaksi.status_pembayaran === "Berhasil") {
+            await apiCall("PUT", `/konsumen/pesanan/${editId}/bayar`, { id_user: uid });
+          }
+          const current = transaksiList.find((t) => t.id_transaksi === editId)?.status;
+          if (current !== formTransaksi.status) {
+            await apiCall("PUT", `${base}/pesanan/${editId}/status`, { id_user: uid, status: formTransaksi.status });
+          }
+        },
+        editId === null ? "✓ Pesanan baru berhasil dibuat." : `✓ Transaksi #${editId} berhasil diperbarui.`,
+      );
+      if (ok) {
+        setIsTransaksiFormOpen(false);
+        setEditingTransaksiId(null);
+      }
+      return;
+    }
     const now = new Date().toISOString().replace("T", " ").slice(0, 19);
     const selectedProd = produkList.find((p) => p.id_produk === formTransaksi.id_produk) ?? produkList[0];
     const total = selectedProd.harga * formTransaksi.jumlah_produk;
@@ -782,7 +895,16 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     setEditingTransaksiId(null);
   };
 
-  const handleDeleteTransaksi = (idTransaksi: number): void => {
+  const handleDeleteTransaksi = async (idTransaksi: number): Promise<void> => {
+    if (apiReady && apiBasePath) {
+      const uid = apiUserId as number;
+      const base = apiBasePath;
+      await runApi(
+        () => apiCall("PUT", `${base}/pesanan/${idTransaksi}/status`, { id_user: uid, status: "Batal" }),
+        `✓ Transaksi #${idTransaksi} dibatalkan.`,
+      );
+      return;
+    }
     setTransaksiList((prev) => prev.filter((t) => t.id_transaksi !== idTransaksi));
     setDetailTransaksiList((prev) => prev.filter((d) => d.id_transaksi !== idTransaksi));
     setPembayaranList((prev) => prev.filter((p) => p.id_transaksi !== idTransaksi));
@@ -790,7 +912,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     showToast(`✓ Transaksi #${idTransaksi} berhasil dihapus.`);
   };
 
-  // Pengiriman
   const [isPengirimanFormOpen, setIsPengirimanFormOpen] = useState<boolean>(false);
   const [editingPengirimanId, setEditingPengirimanId] = useState<number | null>(null);
   const [formPengiriman, setFormPengiriman] = useState<{
@@ -870,7 +991,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     showToast(`✓ Data Pengiriman #${idPengiriman} berhasil dihapus.`);
   };
 
-  // Keuangan
   const [isKeuanganFormOpen, setIsKeuanganFormOpen] = useState<boolean>(false);
   const [editingKeuanganId, setEditingKeuanganId] = useState<number | null>(null);
   const [formKeuangan, setFormKeuangan] = useState<{
@@ -911,8 +1031,31 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     setIsKeuanganFormOpen(true);
   };
 
-  const handleSaveKeuangan = (e: FormEvent<HTMLFormElement>): void => {
+  const handleSaveKeuangan = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
+    if (apiReady && apiBasePath) {
+      const uid = apiUserId as number;
+      const base = apiBasePath;
+      const editId = editingKeuanganId;
+      const payload = {
+        id_user: uid,
+        jenis_transaksi: formKeuangan.jenis_transaksi,
+        jumlah_uang: formKeuangan.jumlah_uang,
+        keterangan: formKeuangan.keterangan,
+      };
+      const ok = await runApi(
+        () =>
+          editId !== null
+            ? apiCall("PUT", `${base}/keuangan/${editId}`, payload)
+            : apiCall("POST", `${base}/keuangan`, payload),
+        editId !== null ? `✓ Catatan Keuangan #${editId} berhasil diperbarui.` : "✓ Catatan keuangan berhasil ditambahkan.",
+      );
+      if (ok) {
+        setIsKeuanganFormOpen(false);
+        setEditingKeuanganId(null);
+      }
+      return;
+    }
     const now = new Date().toISOString().replace("T", " ").slice(0, 19);
     const id_transaksi = formKeuangan.refType === "transaksi" ? formKeuangan.refId : null;
     const id_limbah = formKeuangan.refType === "limbah" ? formKeuangan.refId : null;
@@ -956,12 +1099,17 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     setEditingKeuanganId(null);
   };
 
-  const handleDeleteKeuangan = (idKeuangan: number): void => {
+  const handleDeleteKeuangan = async (idKeuangan: number): Promise<void> => {
+    if (apiReady && apiBasePath) {
+      const uid = apiUserId as number;
+      const base = apiBasePath;
+      await runApi(() => apiCall("DELETE", `${base}/keuangan/${idKeuangan}`, { id_user: uid }), `✓ Catatan Keuangan #${idKeuangan} berhasil dihapus.`);
+      return;
+    }
     setKeuanganList((prev) => prev.filter((k) => k.id_keuangan !== idKeuangan));
     showToast(`✓ Catatan Keuangan #${idKeuangan} berhasil dihapus.`);
   };
 
-  // Pengguna & Log
   const [isPenggunaFormOpen, setIsPenggunaFormOpen] = useState<boolean>(false);
   const [editingPenggunaId, setEditingPenggunaId] = useState<number | null>(null);
   const [formPengguna, setFormPengguna] = useState<{
@@ -1051,7 +1199,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     }));
   };
 
-  // Filter list
   const q = searchQuery.toLowerCase().trim();
 
   const displayedProduk = useMemo(() => {
@@ -1110,7 +1257,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     );
   }, [keuanganList, currentRole, profile.id_user, q]);
 
-  // Ringkasan jual-beli
   const [tasksByRole, setTasksByRole] = useState<Record<RoleSlug, RoleTaskItem[]>>(ROLE_INITIAL_TASKS);
   const [newTaskTitle, setNewTaskTitle] = useState<string>("");
   const [newTaskTime, setNewTaskTime] = useState<string>("16:00-17:30 PM");
@@ -1121,7 +1267,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   const roleNotif = ROLE_NOTIFICATIONS[currentRole];
   const halamanBeliLinks = ROLE_HALAMAN_BELI_LINKS[currentRole];
 
-  // Transaksi di mana role ini bertindak sebagai PENJUAL (id_penjual) vs PEMBELI (id_pembeli)
   const penjualanRole = useMemo(
     () =>
       currentRole === "admin"
@@ -1199,13 +1344,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-gray-900">
       <div className="mx-auto flex min-h-screen w-full flex-col lg:flex-row">
-        {/* Sidebar Kiri (gaya panel admin putih) */}
         <aside
           aria-label="Navbar Kiri Dashboard CRUD"
           className="flex w-full shrink-0 flex-col justify-between border-b border-gray-200 bg-white px-4 py-5 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:overflow-y-auto lg:border-b-0 lg:border-r"
         >
           <div className="space-y-6">
-            {/* Brand */}
             <div className="flex items-center justify-between px-1">
               <Link href="/" className="group inline-flex items-center gap-2.5">
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#95A87A]/20 p-1.5 ring-1 ring-[#95A87A]/30">
@@ -1222,7 +1365,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
               </span>
             </div>
 
-            {/* Info Akun Pengguna */}
             <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
               <div className="flex items-center justify-between text-[10px] font-semibold text-gray-500">
                 <span>{profile.peranErd.toUpperCase()}</span>
@@ -1308,7 +1450,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
           </div>
 
           <div className="mt-6 space-y-4">
-            {/* Kartu promo (gaya "Upgrade to Pro") */}
             <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#95A87A]/20 via-[#F8FAFC] to-[#95A87A]/25 p-4 ring-1 ring-[#95A87A]/30">
               <div
                 aria-hidden="true"
@@ -1338,7 +1479,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
               </Link>
             </div>
 
-            {/* Profil singkat & logout */}
             <div className="flex items-center gap-3 border-t border-gray-100 px-1 pt-4">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#95A87A]/30 text-xs font-bold text-[#273419] ring-1 ring-[#95A87A]/40">
                 {profile.nama_lengkap
@@ -1367,7 +1507,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
           </div>
         </aside>
 
-        {/* Area Konten Utama */}
         <div className="min-w-0 flex-1 space-y-6 px-4 pb-10 sm:px-6 lg:px-8">
           <header className="sticky top-0 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
             <div className="inline-flex min-w-0 items-center gap-2.5 rounded-lg bg-gray-50 px-3.5 py-2 ring-1 ring-gray-200">
@@ -1438,7 +1577,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
           
           {activeTab === "home" && (
             <section aria-label="Ringkasan Dashboard Ekosistem" className="space-y-6">
-              {/* Judul Halaman */}
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Dashboard</h1>
@@ -1448,7 +1586,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                 </div>
               </div>
 
-              {/* Baris Kartu Ringkasan Penjualan & Pembelian Akun */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                   <div className="flex items-start justify-between">
@@ -1630,7 +1767,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
 
                 
                 <div className="space-y-6 lg:col-span-7">
-                  {/* Notification Card (Dengan Tombol Kuning & Lingkaran Konsentris di Kanan Bawah) */}
                   <div>
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold text-gray-900">Notification</h3>
@@ -1682,7 +1818,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                     </div>
                   </div>
 
-                  {/* Data Spesifik Hasil Konsumen / Aktivitas Jual & Beli Role */}
                   <div>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
@@ -1804,7 +1939,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         })}
                       </div>
 
-                      {/* Pintasan Bawah ke Halaman Biasa Buat Beli */}
                       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-2.5">
                         <span className="text-xs font-semibold text-gray-900">
                           Ingin melakukan transaksi pembelian baru di halaman biasa?
@@ -1909,7 +2043,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
           
           {activeTab !== "home" && (
             <main id="crud-table-workspace" className="space-y-5">
-              {/* Header Tabel & Breadcrumb */}
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
                 <div>
                   <button
@@ -1927,7 +2060,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                   </p>
                 </div>
 
-                {/* Tombol Aksi Utama */}
                 {activeTab !== "profil" && (
                   <div className="flex items-center gap-2">
                     {activeTab === "produk" && (
@@ -1988,7 +2120,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                 )}
               </div>
 
-              {/* Pill Tab Switcher & Pencarian */}
               <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
                 <div className="flex flex-wrap gap-2">
                   {availableTabs.map((tab) => {
@@ -2600,7 +2731,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               ))}
                             </select>
 
-                            {/* Preview Produk Terpilih */}
                             {(() => {
                               const selectedProd = produkList.find(
                                 (p) => p.id_produk === formTransaksi.id_produk,
@@ -3521,8 +3651,15 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                 </p>
 
                 <form
-                  onSubmit={(e) => {
+                  onSubmit={async (e) => {
                     e.preventDefault();
+                    if (apiReady && apiBasePath) {
+                      await runApi(
+                        () => apiCall("PUT", `${apiBasePath}/profil/${apiUserId}`, buildProfilPayload()),
+                        `✓ Profil ${profile.peranErd} berhasil disimpan.`,
+                      );
+                      return;
+                    }
                     addLog(
                       `UPDATE_PROFIL_${profile.peranErd.toUpperCase()}`,
                       `PUT /api/profil/${profile.slug}`,
