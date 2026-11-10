@@ -22,7 +22,7 @@ import {
   UsersIcon,
 } from "@/components/ui/Icons";
 import { type RoleSlug } from "@/data/profil";
-import { findUserByEmail, isEmailDeleted, setActiveRole, setActiveUserEmail } from "@/lib/auth";
+import { findUserByEmail, findUserByIdentifier, isEmailDeleted, setActiveRole, setActiveUserEmail } from "@/lib/auth";
 
 type RoleFilter = "Petani" | "UMKM Kuliner" | "Pengolah Residu" | "Pembeli & Ritel" | "Admin Sistem";
 
@@ -90,6 +90,73 @@ interface GoogleAccountItem {
   roleHint?: string;
 }
 
+interface DemoAccountInfo {
+  roleId: RoleFilter;
+  roleBadge: string;
+  nama: string;
+  email: string;
+  phone: string;
+  password: string;
+  desc: string;
+}
+
+const OFFICIAL_DEMO_ACCOUNTS: readonly DemoAccountInfo[] = [
+  {
+    roleId: "UMKM Kuliner",
+    roleBadge: "UMKM #203",
+    nama: "Siti Masitoh (Camilan Keripik Mangga Barokah)",
+    email: "keripik.barokah@samangga.id",
+    phone: "0813-2233-4455",
+    password: "samangga2026",
+    desc: "Produsen olahan keripik mangga Losarang, pencatat limbah kulit & biji.",
+  },
+  {
+    roleId: "UMKM Kuliner",
+    roleBadge: "UMKM #202",
+    nama: "Hj. Ningsih Rahmawati (UMKM Dapur Mangga Bu Ning)",
+    email: "dapur.buning@samangga.id",
+    phone: "0813-9876-5432",
+    password: "samangga2026",
+    desc: "Produsen dodol & sirup gedong gincu Sindang, Indramayu.",
+  },
+  {
+    roleId: "Petani",
+    roleBadge: "Supplier #101",
+    nama: "H. Agus Supriyadi (KT Sumber Rejeki)",
+    email: "agus.sumberrejeki@samangga.id",
+    phone: "0812-2345-6789",
+    password: "samangga2026",
+    desc: "Kelompok tani mangga gedong gincu & arumanis Lohbener.",
+  },
+  {
+    roleId: "Pengolah Residu",
+    roleBadge: "Mitra #303",
+    nama: "Ir. Hendra Kusuma (CV Bio Tani Lestari)",
+    email: "operasional@biotanipantura.id",
+    phone: "0821-1122-3344",
+    password: "samangga2026",
+    desc: "Mitra sirkular bio-refinery, pengolah pupuk kompos & pakan ternak.",
+  },
+  {
+    roleId: "Pembeli & Ritel",
+    roleBadge: "Konsumen #404",
+    nama: "Budi Santoso (PT Segar Buah Nusantara)",
+    email: "purchasing@segarbuah.co.id",
+    phone: "0811-2233-4455",
+    password: "samangga2026",
+    desc: "Pembeli grosir ritel modern Jabodetabek & Pantura.",
+  },
+  {
+    roleId: "Admin Sistem",
+    roleBadge: "Admin #505",
+    nama: "Dr. Raka Pratama, M.Kom.",
+    email: "admin.pusat@samangga.id",
+    phone: "0815-8800-9900",
+    password: "admin123",
+    desc: "Super Admin Command Center Agribisnis & Pasar Sirkular SAMANGGA.",
+  },
+];
+
 function getLoginRoleIcon(role: RoleFilter): JSX.Element {
   switch (role) {
     case "Petani":
@@ -118,9 +185,10 @@ function LoginPageContent(): JSX.Element {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(true);
 
-  // Google Auth State
+  // Google & Demo State
   const [isGoogleLoading, setIsGoogleLoading] = useState<boolean>(false);
   const [showGoogleModal, setShowGoogleModal] = useState<boolean>(paramGoogle);
+  const [modalTab, setModalTab] = useState<"demo" | "google">("demo");
   const [customGoogleEmail, setCustomGoogleEmail] = useState<string>("");
   const [customGoogleName, setCustomGoogleName] = useState<string>("");
 
@@ -186,9 +254,18 @@ function LoginPageContent(): JSX.Element {
       return;
     }
 
-    // 2. Cek apakah identifier adalah email yang terdaftar
-    const userFound = findUserByEmail(identifier);
+    // 2. Cek apakah identifier adalah email, nomor WhatsApp, atau ID akun yang terdaftar
+    const userFound = findUserByIdentifier(identifier) || findUserByEmail(identifier);
     if (userFound) {
+      if (isEmailDeleted(userFound.email)) {
+        setTopAlert({
+          variant: "danger",
+          title: "Akun Telah Dihapus",
+          message: `Akun "${identifier}" telah dihapus oleh Admin Platform SAMANGGA. Silakan daftar kembali jika ingin bergabung.`,
+        });
+        return;
+      }
+
       setActiveRole(userFound.role);
       setActiveUserEmail(userFound.email);
       setTopAlert({
@@ -216,6 +293,18 @@ function LoginPageContent(): JSX.Element {
       variant: "danger",
       title: "Akun Belum Terdaftar",
       message: `Akun "${identifier}" belum terdaftar di platform SAMANGGA. Silakan daftar terlebih dahulu.`,
+    });
+  };
+
+  const handlePickDemo = (demo: DemoAccountInfo): void => {
+    setSelectedRole(demo.roleId);
+    setIdentifier(demo.email);
+    setPassword(demo.password);
+    setShowGoogleModal(false);
+    setTopAlert({
+      variant: "success",
+      title: "Akun Demo Dipilih",
+      message: `Akun "${demo.nama}" (${demo.email}) siap digunakan. Silakan klik tombol "Masuk sebagai ${demo.roleBadge.split(" ")[0]}" untuk melanjutkan.`,
     });
   };
 
@@ -397,89 +486,128 @@ function LoginPageContent(): JSX.Element {
           aria-labelledby="google-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200"
         >
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-black/10">
-            <div className="flex items-start justify-between border-b border-gray-100 pb-4">
-              <div className="flex items-center gap-2.5">
-                <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    fill="#4285F4"
-                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                  />
-                </svg>
-                <div>
-                  <h3 id="google-modal-title" className="text-base font-bold text-gray-900">
-                    Pilih Akun Google
-                  </h3>
-                  <p className="text-xs text-gray-500">untuk melanjutkan ke platform SAMANGGA</p>
-                </div>
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-black/10 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between border-b border-gray-100 pb-3">
+              <div>
+                <h3 id="google-modal-title" className="text-base font-bold text-gray-900">
+                  {modalTab === "demo" ? "Pilih Akun Demo SAMANGGA" : "Simulasi Masuk dengan Akun Google"}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  {modalTab === "demo"
+                    ? "Gunakan salah satu akun resmi dari 5 peran untuk langsung mencoba sistem"
+                    : "Simulasikan otentikasi menggunakan akun Google Anda"}
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowGoogleModal(false)}
-                aria-label="Tutup pemilih akun Google"
+                aria-label="Tutup jendela modal"
                 className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
               >
                 ✕
               </button>
             </div>
 
-            <div className="mt-4">
-              <form onSubmit={handleCustomGoogleSubmit} className="space-y-3 rounded-2xl bg-gray-50/80 p-4 border border-gray-200">
-                <div>
-                  <label className="block text-xs font-bold text-gray-800 mb-1">
-                    Nama Lengkap Akun Google:
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={customGoogleName}
-                    onChange={(e) => setCustomGoogleName(e.target.value)}
-                    placeholder="Contoh: Budi Santoso"
-                    className="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-[#166534] focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-800 mb-1">
-                    Alamat Email Google:
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={customGoogleEmail}
-                    onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                    placeholder="nama@gmail.com"
-                    className="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-[#166534] focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <div className="flex gap-2 pt-1">
-                  <button
-                    type="submit"
-                    className="flex-1 rounded-xl bg-[#3D5126] py-2.5 text-xs font-bold text-white hover:bg-[#273419] shadow-sm transition-all active:scale-98"
-                  >
-                    Lanjutkan Masuk dengan Google
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowGoogleModal(false)}
-                    className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100"
-                  >
-                    Batal
-                  </button>
-                </div>
-              </form>
+            <div className="mt-3 flex rounded-xl bg-gray-100 p-1 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setModalTab("demo")}
+                className={`flex-1 rounded-lg py-2 transition-all ${
+                  modalTab === "demo" ? "bg-white text-green-800 shadow-2xs font-bold" : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                ⚡ Akun Demo Resmi
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalTab("google")}
+                className={`flex-1 rounded-lg py-2 transition-all ${
+                  modalTab === "google" ? "bg-white text-blue-700 shadow-2xs font-bold" : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                G Simulasi Google OAuth
+              </button>
             </div>
+
+            {modalTab === "demo" ? (
+              <div className="mt-4 space-y-2.5">
+                <p className="text-[11px] text-gray-500 font-medium">
+                  Klik salah satu akun untuk langsung mengisi peran, email/no HP, dan kata sandi:
+                </p>
+                <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                  {OFFICIAL_DEMO_ACCOUNTS.map((d) => (
+                    <button
+                      key={d.email}
+                      type="button"
+                      onClick={() => handlePickDemo(d)}
+                      className="w-full text-left rounded-2xl border border-gray-200 bg-white p-3 hover:border-green-600 hover:bg-green-50/40 transition-all flex items-start justify-between group shadow-2xs cursor-pointer"
+                    >
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-gray-900 group-hover:text-green-800">
+                            {d.nama}
+                          </span>
+                          <span className="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold">
+                            {d.roleBadge}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 font-mono">{d.email}</p>
+                        <p className="text-[11px] text-gray-500 leading-tight">{d.desc}</p>
+                      </div>
+                      <span className="shrink-0 rounded-lg bg-green-700 px-2.5 py-1 text-[11px] font-bold text-white group-hover:bg-green-800 transition-colors">
+                        Pilih ➔
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <form onSubmit={handleCustomGoogleSubmit} className="space-y-3 rounded-2xl bg-gray-50/80 p-4 border border-gray-200">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 mb-1">
+                      Nama Lengkap Akun Google:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={customGoogleName}
+                      onChange={(e) => setCustomGoogleName(e.target.value)}
+                      placeholder="Contoh: Budi Santoso"
+                      className="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-[#166534] focus:outline-none shadow-2xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-800 mb-1">
+                      Alamat Email Google:
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={customGoogleEmail}
+                      onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                      placeholder="nama@gmail.com"
+                      className="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-xs text-gray-900 focus:border-[#166534] focus:outline-none shadow-2xs"
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="submit"
+                      className="flex-1 rounded-xl bg-[#3D5126] py-2.5 text-xs font-bold text-white hover:bg-[#273419] shadow-sm transition-all active:scale-98"
+                    >
+                      Lanjutkan Masuk dengan Google
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowGoogleModal(false)}
+                      className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -763,6 +891,43 @@ function LoginPageContent(): JSX.Element {
                     >
                       {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                     </button>
+                  </div>
+                </div>
+
+                {/* Akses Cepat Akun Demo Resmi */}
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-2.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-green-900">⚡ Coba Akun Demo Resmi:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModalTab("demo");
+                        setShowGoogleModal(true);
+                      }}
+                      className="text-[11px] font-semibold text-green-700 hover:underline cursor-pointer"
+                    >
+                      Bantuan Demo ➔
+                    </button>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {OFFICIAL_DEMO_ACCOUNTS.map((d) => {
+                      const isSelected = identifier.toLowerCase() === d.email.toLowerCase();
+                      return (
+                        <button
+                          key={d.email}
+                          type="button"
+                          onClick={() => handlePickDemo(d)}
+                          className={`rounded-md border px-2 py-0.5 text-[10px] font-medium transition-all cursor-pointer ${
+                            isSelected
+                              ? "border-green-700 bg-green-700 text-white font-bold shadow-2xs"
+                              : "border-emerald-200 bg-white text-emerald-900 hover:bg-emerald-100"
+                          }`}
+                          title={`${d.nama} (${d.email})`}
+                        >
+                          {d.roleBadge}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

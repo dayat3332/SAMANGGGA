@@ -454,7 +454,11 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   const [profiles, setProfiles] = useState<Record<RoleSlug, AnyRoleProfile>>(DEFAULT_PROFILES);
   const [penggunaList, setPenggunaList] = useState<Pengguna[]>(() => {
     const fromStorage = getRegisteredUsers().map(mapRegisteredUserToPengguna);
-    return [...fromStorage, ...INITIAL_PENGGUNA_LIST];
+    const storageEmails = new Set(fromStorage.map((u) => u.email.toLowerCase()));
+    const initialRemaining = INITIAL_PENGGUNA_LIST.filter(
+      (p) => !storageEmails.has(p.email.toLowerCase()),
+    );
+    return [...fromStorage, ...initialRemaining];
   });
   const [produkList, setProdukList] = useState<Produk[]>(() => getEcosystemProducts());
   const [transaksiList, setTransaksiList] = useState<Transaksi[]>(() => getEcosystemTransactions());
