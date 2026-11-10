@@ -159,14 +159,17 @@ export function Navbar(): JSX.Element {
         </ul>
 
         <div className="flex items-center gap-2">
+          {/* Tombol Keranjang Belanja */}
           <Link
             href="/keranjang"
+            title="Keranjang Belanja"
             aria-label={`Keranjang belanja, ${cartItemCount} item`}
-            className="relative inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-[#273419] shadow-xs hover:border-[#3D5126] hover:bg-[#95A87A]/15 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126]"
+            className="relative inline-flex h-9 sm:h-10 items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 text-[#273419] shadow-xs hover:border-[#3D5126] hover:bg-[#95A87A]/15 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126]"
           >
             <BasketIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="text-xs sm:text-sm font-bold text-[#273419]">Keranjang</span>
             {cartItemCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full bg-[#FFB81C] text-[10px] sm:text-xs font-black text-[#273419] shadow-xs ring-2 ring-white">
+              <span className="flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full bg-[#FFB81C] text-[10px] sm:text-xs font-black text-[#273419] shadow-xs ring-2 ring-white">
                 {cartItemCount}
               </span>
             )}
@@ -292,6 +295,27 @@ export function Navbar(): JSX.Element {
                 </Link>
               </li>
             ))}
+
+            <li>
+              <Link
+                href="/keranjang"
+                onClick={() => setOpen(false)}
+                aria-current={isActive("/keranjang") ? "page" : undefined}
+                className={`flex items-center justify-between rounded-lg px-3 py-3 text-base font-semibold text-[#273419] hover:bg-[#95A87A]/30 ${FOCUS_RING} ${
+                  isActive("/keranjang") ? "bg-[#95A87A]/35" : ""
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <BasketIcon className="h-5 w-5 text-[#3D5126]" />
+                  <span>Keranjang</span>
+                </div>
+                {cartItemCount > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#FFB81C] px-1.5 text-xs font-black text-[#273419]">
+                    {cartItemCount}
+                  </span>
+                )}
+              </Link>
+            </li>
 
             {currentProfile ? (
               <li className="pt-2 border-t border-gray-100 sm:hidden">

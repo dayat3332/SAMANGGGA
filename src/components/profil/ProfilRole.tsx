@@ -46,7 +46,7 @@ import {
   type RoleSlug,
   type UmkmProfile,
 } from "@/data/profil";
-import { formatNumber, formatRupiah } from "@/lib/format";
+import { formatNumber, formatRupiah, maskEmail, maskPhone } from "@/lib/format";
 import { notifyAuthChange } from "@/components/layout/SiteNavbar";
 import {
   findUserByEmail,
@@ -165,13 +165,13 @@ const ROLE_HALAMAN_BELI_LINKS: Record<RoleSlug, readonly HalamanBeliLink[]> = {
   petani: [
     {
       label: "Beli Pupuk & Bibit Pohon",
-      sublabel: "Halaman Biasa · Pasar Sirkular",
-      href: "/pasar-sirkular?role=petani",
+      sublabel: "Fungsi Operasional · Pupuk & Bibit Mitra",
+      href: "/fungsi/supplier",
     },
     {
-      label: "Halaman Fungsi & Beli Sirkular",
-      sublabel: "Navbar Atas · Operasional Supplier",
-      href: "/fungsi/supplier",
+      label: "Pasar Limbah Sirkular",
+      sublabel: "Bursa & Salurkan Limbah Panen",
+      href: "/pasar-sirkular?role=petani",
     },
     {
       label: "Lihat Katalog Komoditas",
@@ -435,6 +435,39 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   const [activeTab, setActiveTab] = useState<ActiveViewId>("home");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Auth Guard State: Dashboard terlindungi dan mewajibkan autentikasi login
+  const [authGuardChecked, setAuthGuardChecked] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
+  const [sessionRole, setSessionRole] = useState<RoleSlug | null>(null);
+
+  // Privasi Data Pribadi Pengguna (UU PDP): Sensor default email & nomor telepon
+  const [isPrivacyMasked, setIsPrivacyMasked] = useState<boolean>(true);
+
+  // Validasi Sesi Autentikasi dan Otorisasi Hak Akses Peran
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const role = getActiveRole();
+    const email = getActiveUserEmail();
+    const hasSession = Boolean(role && email);
+
+    setSessionRole(role);
+    setIsAuthenticated(hasSession);
+
+    if (!hasSession) {
+      setAuthGuardChecked(true);
+      setIsAuthorized(false);
+      return;
+    }
+
+    if (currentRole === "admin") {
+      setIsAuthorized(role === "admin");
+    } else {
+      setIsAuthorized(role === currentRole || role === "admin");
+    }
+    setAuthGuardChecked(true);
+  }, [currentRole]);
 
   // Sesi Guard: Jika akun pengguna telah dihapus oleh Admin, keluarkan dari sesi dashboard
   useEffect(() => {
@@ -1571,6 +1604,142 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   const primaryBeliHref = halamanBeliLinks[0]?.href ?? fungsiRoleHref;
   const activeTabMeta = availableTabs.find((t) => t.id === activeTab) ?? availableTabs[0];
 
+  // Tampilan loading verifikasi sesi
+  if (!authGuardChecked) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#3D5126] border-t-transparent" />
+          <p className="text-xs font-semibold text-gray-500">Memverifikasi sesi keamanan SAMANGGA...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Guard 1: Belum login sama sekali (Sesi Tidak Ada)
+  if (!isAuthenticated) {
+    const roleMeta = DEFAULT_PROFILES[currentRole];
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-[#273419]">
+        <header className="border-b border-gray-200 bg-white px-6 py-4">
+          <div className="mx-auto flex max-w-6xl items-center justify-between">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <img src="/images/logo_web.png" alt="SAMANGGA" className="h-7 w-7 object-contain" />
+              <span className="text-base font-extrabold tracking-tight text-[#273419]">SAMANGGA</span>
+            </Link>
+            <Link
+              href="/login"
+              className="rounded-full bg-[#3D5126] px-4 py-2 text-xs font-bold text-white hover:bg-[#273419] transition-all"
+            >
+              Masuk / Login
+            </Link>
+          </div>
+        </header>
+
+        <main className="mx-auto w-full max-w-lg px-4 py-16 text-center">
+          <div className="rounded-3xl border border-amber-200 bg-white p-7 sm:p-9 shadow-sm">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 ring-8 ring-amber-50/50">
+              <ShieldCheckIcon className="h-7 w-7" />
+            </div>
+            <span className="mt-4 inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
+              Sesi Login Diperlukan
+            </span>
+            <h1 className="mt-3 text-xl sm:text-2xl font-black text-gray-900">
+              Dashboard Terproteksi
+            </h1>
+            <p className="mt-2 text-xs sm:text-sm leading-relaxed text-gray-600">
+              Halaman dashboard <strong>{roleMeta.peranErd} ({roleMeta.nama_lengkap})</strong> dilindungi sistem keamanan SAMANGGA untuk menjaga privasi data pengguna dan integritas transaksi. Silakan masuk terlebih dahulu dengan akun resmi atau akun demo terdaftar.
+            </p>
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-2.5 justify-center">
+              <Link
+                href={`/login?role=${currentRole}&redirect=/profil/${currentRole}`}
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#3D5126] px-5 text-sm font-bold text-white shadow-sm hover:bg-[#273419] transition-all"
+              >
+                Masuk ke Akun
+              </Link>
+              <Link
+                href="/dashboard"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-gray-300 bg-white px-5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all"
+              >
+                Kembali ke Portal Peran
+              </Link>
+            </div>
+          </div>
+        </main>
+
+        <footer className="border-t border-gray-200 bg-white py-4 text-center text-xs text-gray-500">
+          © 2026 SAMANGGA Inc. Keamanan &amp; Privasi Data Pengguna Terlindungi.
+        </footer>
+      </div>
+    );
+  }
+
+  // Guard 2: Sudah login tetapi peran tidak berwenang (misal bukan Admin saat buka /profil/admin)
+  if (!isAuthorized) {
+    const roleMeta = DEFAULT_PROFILES[currentRole];
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-[#273419]">
+        <header className="border-b border-gray-200 bg-white px-6 py-4">
+          <div className="mx-auto flex max-w-6xl items-center justify-between">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <img src="/images/logo_web.png" alt="SAMANGGA" className="h-7 w-7 object-contain" />
+              <span className="text-base font-extrabold tracking-tight text-[#273419]">SAMANGGA</span>
+            </Link>
+            {sessionRole && (
+              <Link
+                href={`/profil/${sessionRole}`}
+                className="rounded-full bg-[#3D5126] px-4 py-2 text-xs font-bold text-white hover:bg-[#273419] transition-all"
+              >
+                Dashboard Saya ({sessionRole})
+              </Link>
+            )}
+          </div>
+        </header>
+
+        <main className="mx-auto w-full max-w-lg px-4 py-16 text-center">
+          <div className="rounded-3xl border border-red-200 bg-white p-7 sm:p-9 shadow-sm">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600 ring-8 ring-red-50/50">
+              <ShieldCheckIcon className="h-7 w-7" />
+            </div>
+            <span className="mt-4 inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-800">
+              Akses Ditolak (403 Forbidden)
+            </span>
+            <h1 className="mt-3 text-xl sm:text-2xl font-black text-gray-900">
+              Hak Akses Peran Terbatas
+            </h1>
+            <p className="mt-2 text-xs sm:text-sm leading-relaxed text-gray-600">
+              {currentRole === "admin"
+                ? "Halaman ini khusus untuk Administrator Sistem SAMANGGA. Akun Anda saat ini masuk dengan peran non-admin."
+                : `Anda saat ini sedang login sebagai peran "${sessionRole?.toUpperCase()}". Halaman ini diperuntukkan khusus bagi peran "${roleMeta.peranErd}".`}
+            </p>
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-2.5 justify-center">
+              {sessionRole && (
+                <Link
+                  href={`/profil/${sessionRole}`}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#3D5126] px-5 text-sm font-bold text-white shadow-sm hover:bg-[#273419] transition-all"
+                >
+                  Buka Dashboard Saya ({sessionRole})
+                </Link>
+              )}
+              <Link
+                href={`/login?role=${currentRole}&redirect=/profil/${currentRole}`}
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-gray-300 bg-white px-5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all"
+              >
+                Ganti Akun Masuk
+              </Link>
+            </div>
+          </div>
+        </main>
+
+        <footer className="border-t border-gray-200 bg-white py-4 text-center text-xs text-gray-500">
+          © 2026 SAMANGGA Inc. Keamanan &amp; Privasi Data Pengguna Terlindungi.
+        </footer>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-gray-900">
       <div className="mx-auto flex min-h-screen w-full flex-col lg:flex-row">
@@ -1910,30 +2079,6 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                       📷 Kirim Ulang Foto Berkas
                     </button>
                   </div>
-                </div>
-              )}
-
-              {allMitraUsers.length > 1 && (
-                <div className="flex items-center gap-2 flex-wrap text-xs bg-gray-50 px-3 py-2 rounded-xl border border-gray-200">
-                  <span className="text-gray-500 font-semibold">Ganti Akun Uji Mitra:</span>
-                  {allMitraUsers.map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setActiveMitraTestId(m.id)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                        currentMitraUser?.id === m.id
-                          ? m.statusVerifikasi === "Menunggu"
-                            ? "bg-amber-500 text-white"
-                            : m.statusVerifikasi === "Ditolak"
-                            ? "bg-red-600 text-white"
-                            : "bg-[#3D5126] text-white"
-                          : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-100"
-                      }`}
-                    >
-                      {(m.extraData?.namaInstansi as string) || m.namaLengkap} ({m.statusVerifikasi})
-                    </button>
-                  ))}
                 </div>
               )}
             </div>
@@ -2983,9 +3128,9 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                         </div>
                         <button type="button" onClick={() => setActiveTab("pengguna")} className="text-xs font-bold text-[#3D5126] hover:underline cursor-pointer">Kelola</button>
                       </div>
-                      <p className="mt-3 text-2xl font-bold text-gray-900">{registeredUsersList.length + 5} <span className="text-sm font-normal text-gray-500">Akun</span></p>
+                      <p className="mt-3 text-2xl font-bold text-gray-900">{registeredUsersList.length} <span className="text-sm font-normal text-gray-500">Akun</span></p>
                       <p className="mt-1 text-[11px] text-gray-500">
-                        Petani, UMKM, Mitra, &amp; Konsumen aktif
+                        Petani, UMKM, Mitra, &amp; Konsumen terdaftar
                       </p>
                     </div>
 
@@ -3051,6 +3196,23 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
+                              onClick={() => {
+                                if (isPrivacyMasked) {
+                                  if (window.confirm("Peringatan Privasi (UU PDP):\nBuka sensor data pribadi pengguna (Email & Nomor HP)? Pastikan Anda memiliki wewenang operasional.")) {
+                                    setIsPrivacyMasked(false);
+                                    addLog("AUDIT_PRIVACY", "GET /api/admin/pengguna/unmask", "Admin membuka sensor data pribadi pengguna.", "Warning");
+                                  }
+                                } else {
+                                  setIsPrivacyMasked(true);
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-all cursor-pointer"
+                              title="Sensor privasi data sesuai UU PDP No. 27/2022"
+                            >
+                              <span>{isPrivacyMasked ? "🔒 Sensor Aktif" : "🔓 Sensor Dibuka"}</span>
+                            </button>
+                            <button
+                              type="button"
                               onClick={async () => {
                                 setIsSyncingUsers(true);
                                 await syncRegisteredUsersFromDatabase();
@@ -3094,7 +3256,7 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                                         {u.peranErd}
                                       </span>
                                     </div>
-                                    <p className="mt-0.5 text-[11px] text-gray-500">{u.email} • {u.nomorWhatsapp || "-"}</p>
+                                    <p className="mt-0.5 text-[11px] text-gray-500">{isPrivacyMasked ? maskEmail(u.email) : u.email} • {isPrivacyMasked ? maskPhone(u.nomorWhatsapp) : (u.nomorWhatsapp || "-")}</p>
                                     <p className="text-[10px] text-gray-400">Daftar: {u.registeredAt || "-"}</p>
                                   </div>
                                 </div>
@@ -3159,13 +3321,13 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                           ))}
                         </div>
 
-                        {/* Banner Status Infrastruktur Platform */}
+                        {/* Banner Status Operasional Platform */}
                         <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-xs text-emerald-900 space-y-2">
                           <p className="font-bold flex items-center gap-1.5">
-                            <span>🟢 Infrastruktur &amp; Layanan Sistem Online</span>
+                            <span>🟢 Status Operasional Sistem Online</span>
                           </p>
                           <p className="text-[11px] text-emerald-800 leading-relaxed">
-                            PostgreSQL 5432 aktif, Prisma ORM sinkron, dan sistem pub-sub reaktif ekosistem 5 peran berjalan normal tanpa kendala.
+                            Semua modul layanan platform dan sinkronisasi data ekosistem 5 peran berjalan normal tanpa kendala.
                           </p>
                           <button
                             type="button"
@@ -3555,22 +3717,28 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                               <div className="flex items-center gap-2 text-gray-600">
                                 <span className="text-gray-400">✉️</span>
                                 <a
-                                  href={`mailto:${m.email}`}
+                                  href={isPrivacyMasked ? undefined : `mailto:${m.email}`}
                                   className="text-[#3D5126] hover:underline font-medium truncate"
                                 >
-                                  {m.email}
+                                  {isPrivacyMasked ? maskEmail(m.email) : m.email}
                                 </a>
                               </div>
                               <div className="flex items-center gap-2 text-gray-600">
                                 <WhatsAppIcon className="h-3.5 w-3.5 text-emerald-600" />
-                                <a
-                                  href={`https://wa.me/${m.nomorWhatsapp.replace(/^0/, "62")}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-emerald-700 hover:underline font-bold"
-                                >
-                                  {m.nomorWhatsapp} (Hubungi PIC)
-                                </a>
+                                {isPrivacyMasked ? (
+                                  <span className="text-gray-600 font-mono font-medium">
+                                    {maskPhone(m.nomorWhatsapp)}
+                                  </span>
+                                ) : (
+                                  <a
+                                    href={`https://wa.me/${m.nomorWhatsapp.replace(/^0/, "62")}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-emerald-700 hover:underline font-bold"
+                                  >
+                                    {m.nomorWhatsapp} (Hubungi PIC)
+                                  </a>
+                                )}
                               </div>
                               <div className="flex items-center gap-2 text-gray-600">
                                 <span className="text-gray-400">⚖️</span>
@@ -5041,13 +5209,41 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
             
             {activeTab === "pengguna" && (
               <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
-                <div>
-                  <h2 className="text-base font-bold text-gray-900">
-                    Data Pengguna
-                  </h2>
-                  <p className="text-xs text-gray-500">
-                    Kelola seluruh akun pengguna platform: tambah pengguna, ubah peran/status verifikasi, atau hapus akun.
-                  </p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-100 pb-3">
+                  <div>
+                    <h2 className="text-base font-bold text-gray-900">
+                      Data Pengguna
+                    </h2>
+                    <p className="text-xs text-gray-500">
+                      Kelola seluruh akun pengguna platform: tambah pengguna, ubah peran/status verifikasi, atau hapus akun.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isPrivacyMasked) {
+                          if (window.confirm("Peringatan Privasi (UU PDP):\nBuka sensor data pribadi pengguna (Email & Nomor HP)? Pastikan Anda memiliki wewenang operasional.")) {
+                            setIsPrivacyMasked(false);
+                            addLog("AUDIT_PRIVACY", "GET /api/admin/pengguna/unmask", "Admin membuka sensor data pribadi pengguna.", "Warning");
+                          }
+                        } else {
+                          setIsPrivacyMasked(true);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50 shadow-xs cursor-pointer transition-all"
+                      title="Sensor privasi data sesuai UU PDP No. 27/2022"
+                    >
+                      <span>{isPrivacyMasked ? "🔒 Sensor Data Aktif" : "🔓 Sensor Dibuka"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openCreatePengguna}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#3D5126] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#273419] shadow-xs cursor-pointer transition-all"
+                    >
+                      <span>+ Tambah Pengguna</span>
+                    </button>
+                  </div>
                 </div>
 
                 {isPenggunaFormOpen && (
@@ -5224,8 +5420,8 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
                             </td>
                             <td className="p-3 font-bold">{u.peran}</td>
                             <td className="p-3">
-                              <p>{u.email}</p>
-                              <p className="text-[11px] text-gray-500">{u.no_telp}</p>
+                              <p>{isPrivacyMasked ? maskEmail(u.email) : u.email}</p>
+                              <p className="text-[11px] text-gray-500">{isPrivacyMasked ? maskPhone(u.no_telp) : u.no_telp}</p>
                             </td>
                             <td className="p-3">
                               <span

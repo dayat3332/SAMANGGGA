@@ -35,7 +35,7 @@ const STORAGE_SHIPMENTS_KEY = "samangga_ecosystem_shipments";
 const STORAGE_FINANCES_KEY = "samangga_ecosystem_finances";
 const STORAGE_LOGS_KEY = "samangga_ecosystem_logs";
 const STORAGE_VERSION_TAG_KEY = "samangga_ecosystem_version_tag";
-const CURRENT_ECOSYSTEM_VERSION = "samangga_v5_clean_2prod";
+const CURRENT_ECOSYSTEM_VERSION = "samangga_v6_clean_prod";
 
 export const ECOSYSTEM_EVENT = "samangga_ecosystem_change";
 
@@ -71,7 +71,7 @@ export const SEED_PRODUK: Produk[] = [
 export const SEED_LIMBAH: Limbah[] = [
   {
     id_limbah: 1,
-    id_umkm: 999,
+    id_umkm: 202,
     id_mitra: null,
     jenis_limbah: "Biji",
     berat_kg: 350,
@@ -88,7 +88,7 @@ export const SEED_LIMBAH: Limbah[] = [
   },
   {
     id_limbah: 2,
-    id_umkm: 999,
+    id_umkm: 203,
     id_mitra: null,
     jenis_limbah: "Kulit",
     berat_kg: 120,
@@ -130,7 +130,7 @@ export const SEED_LOG_SISTEM: LogSistem[] = [
     aksi: "DATABASE_READY",
     endpoint_api: "/api/db/status",
     kode_status: 200,
-    pesan: "PostgreSQL 5432 aktif dan tersinkronisasi.",
+    pesan: "Layanan database dan sinkronisasi sistem aktif.",
     detail_error: null,
     waktu: "2026-11-06 00:00:05",
   },
@@ -410,7 +410,13 @@ export function getEcosystemWasteListings(): WasteListing[] {
       usage = "Cuka mangga, eco-enzyme bio-refinery, dan fermentasi pupuk";
     }
 
-    const ownerName = USER_INFO_MAP[l.id_umkm]?.nama ?? `UMKM / Kelompok Tani #${l.id_umkm}`;
+    const ownerName =
+      USER_INFO_MAP[l.id_umkm]?.nama ??
+      (l.id_umkm === 999 || l.id_umkm === 202
+        ? "Hj. Ningsih (UMKM Dapur Mangga Bu Ning)"
+        : l.id_umkm === 203
+        ? "Siti Masitoh (Camilan Keripik Barokah)"
+        : "Sentra Mitra Binaan Indramayu");
 
     return {
       id: l.id_limbah,

@@ -23,43 +23,43 @@ interface SocialLink {
 const SOCIAL_LINKS: readonly SocialLink[] = [
   {
     name: "Instagram",
-    href: "https://instagram.com",
-    ariaLabel: "Ikuti SAMANGGA di Instagram",
+    href: "https://instagram.com/samangga.id",
+    ariaLabel: "Ikuti SAMANGGA di Instagram @samangga.id",
     handle: "@samangga.id",
     icon: <InstagramIcon className="h-4 w-4" />,
   },
   {
     name: "WhatsApp",
-    href: "https://wa.me/6281234567890?text=Halo%20SAMANGGA%2C%20saya%20ingin%20bertanya%20seputar%20ekosistem%20mangga%20dan%20limbah%20sirkular",
+    href: "https://wa.me/6282123849012?text=Halo%20SAMANGGA%2C%20saya%20ingin%20bertanya%20seputar%20ekosistem%20mangga%20dan%20limbah%20sirkular",
     ariaLabel: "Hubungi Customer Service SAMANGGA melalui WhatsApp",
-    handle: "+62 812-3456-7890",
+    handle: "+62 821-2384-9012",
     icon: <WhatsAppIcon className="h-4 w-4" />,
   },
   {
     name: "YouTube",
-    href: "https://youtube.com",
+    href: "https://youtube.com/@samangga_official",
     ariaLabel: "Kunjungi kanal YouTube SAMANGGA Official",
     handle: "SAMANGGA Official",
     icon: <YoutubeIcon className="h-4 w-4" />,
   },
   {
     name: "Facebook",
-    href: "https://facebook.com",
+    href: "https://facebook.com/samangga.indramayu",
     ariaLabel: "Halaman Facebook SAMANGGA Indramayu",
     handle: "SAMANGGA Indramayu",
     icon: <FacebookIcon className="h-4 w-4" />,
   },
   {
     name: "LinkedIn",
-    href: "https://linkedin.com",
+    href: "https://linkedin.com/company/samangga-indonesia",
     ariaLabel: "Profil LinkedIn SAMANGGA Sirkular Indonesia",
     handle: "SAMANGGA Indonesia",
     icon: <LinkedinIcon className="h-4 w-4" />,
   },
   {
     name: "X (Twitter)",
-    href: "https://x.com",
-    ariaLabel: "Akun resmi X SAMANGGA",
+    href: "https://x.com/samangga_id",
+    ariaLabel: "Akun resmi X SAMANGGA @samangga_id",
     handle: "@samangga_id",
     icon: <TwitterIcon className="h-4 w-4" />,
   },
@@ -213,19 +213,19 @@ export function SiteFooter(): JSX.Element {
                   <div className="mt-0.5 space-y-0.5">
                     <p className="text-white/70">
                       Kantor:{" "}
-                      <a href="tel:02347123456" className="text-white hover:text-[#FFE39A] font-mono">
-                        (0234) 712-3456
+                      <a href="tel:02347128901" className="text-white hover:text-[#FFE39A] font-mono">
+                        (0234) 712-8901
                       </a>
                     </p>
                     <p className="text-white/70">
                       WhatsApp:{" "}
                       <a
-                        href="https://wa.me/6281234567890"
+                        href="https://wa.me/6282123849012"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#FFE39A] hover:underline font-mono font-bold"
                       >
-                        +62 812-3456-7890
+                        +62 821-2384-9012
                       </a>
                     </p>
                   </div>

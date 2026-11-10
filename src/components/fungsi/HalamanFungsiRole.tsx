@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent, JSX } from "react";
+import { getActiveRole, getActiveUserEmail } from "@/lib/auth";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Navbar } from "@/components/layout/SiteNavbar";
 import {
@@ -117,6 +118,35 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
   // Admin Functional State: Tingkat Akses
   const [tingkatAkses, setTingkatAkses] = useState<TingkatAkses>("Super Admin");
   const [filterLog, setFilterLog] = useState<"Semua" | LevelLog>("Semua");
+
+  // Auth Guard State: Halaman operasional wajib melalui autentikasi login
+  const [authGuardChecked, setAuthGuardChecked] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
+  const [sessionRole, setSessionRole] = useState<RoleSlug | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const role = getActiveRole();
+    const email = getActiveUserEmail();
+    const hasSession = Boolean(role && email);
+
+    setSessionRole(role);
+    setIsAuthenticated(hasSession);
+
+    if (!hasSession) {
+      setAuthGuardChecked(true);
+      setIsAuthorized(false);
+      return;
+    }
+
+    if (currentRole === "admin") {
+      setIsAuthorized(role === "admin");
+    } else {
+      setIsAuthorized(role === currentRole || role === "admin");
+    }
+    setAuthGuardChecked(true);
+  }, [currentRole]);
 
   const notify = (msg: string): void => {
     setBanner(msg);
@@ -472,6 +502,104 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
     ]);
     notify(`✓ Status verifikasi ${tipe} #${id} berhasil diubah menjadi "${status}".`);
   };
+
+  // Tampilan loading verifikasi sesi
+  if (!authGuardChecked) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#3D5126] border-t-transparent" />
+          <p className="text-xs font-semibold text-gray-500">Memverifikasi sesi keamanan SAMANGGA...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Guard 1: Belum login
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-[#273419]">
+        <Navbar />
+        <main className="mx-auto w-full max-w-lg px-4 py-16 text-center">
+          <div className="rounded-3xl border border-amber-200 bg-white p-7 sm:p-9 shadow-sm">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 ring-8 ring-amber-50/50">
+              <ShieldCheckIcon className="h-7 w-7" />
+            </div>
+            <span className="mt-4 inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
+              Sesi Login Diperlukan
+            </span>
+            <h1 className="mt-3 text-xl sm:text-2xl font-black text-gray-900">
+              Halaman Operasional Terproteksi
+            </h1>
+            <p className="mt-2 text-xs sm:text-sm leading-relaxed text-gray-600">
+              Halaman operasional <strong>{profile.peranErd}</strong> memerlukan autentikasi login demi menjaga privasi dan keamanan rantai pasok. Silakan masuk terlebih dahulu dengan akun resmi atau akun demo terdaftar.
+            </p>
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-2.5 justify-center">
+              <Link
+                href={`/login?role=${currentRole}&redirect=/fungsi/${currentRole === "petani" ? "supplier" : currentRole}`}
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#3D5126] px-5 text-sm font-bold text-white shadow-sm hover:bg-[#273419] transition-all"
+              >
+                Masuk ke Akun
+              </Link>
+              <Link
+                href="/dashboard"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-gray-300 bg-white px-5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all"
+              >
+                Kembali ke Portal Peran
+              </Link>
+            </div>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
+  // Guard 2: Peran tidak cocok
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-[#273419]">
+        <Navbar />
+        <main className="mx-auto w-full max-w-lg px-4 py-16 text-center">
+          <div className="rounded-3xl border border-red-200 bg-white p-7 sm:p-9 shadow-sm">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600 ring-8 ring-red-50/50">
+              <ShieldCheckIcon className="h-7 w-7" />
+            </div>
+            <span className="mt-4 inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-800">
+              Akses Ditolak (403 Forbidden)
+            </span>
+            <h1 className="mt-3 text-xl sm:text-2xl font-black text-gray-900">
+              Hak Akses Peran Terbatas
+            </h1>
+            <p className="mt-2 text-xs sm:text-sm leading-relaxed text-gray-600">
+              {currentRole === "admin"
+                ? "Halaman operasional ini khusus untuk Administrator Sistem SAMANGGA."
+                : `Anda sedang login sebagai peran "${sessionRole?.toUpperCase()}". Halaman operasional ini diperuntukkan bagi peran "${profile.peranErd}".`}
+            </p>
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-2.5 justify-center">
+              {sessionRole && (
+                <Link
+                  href={`/fungsi/${sessionRole === "petani" ? "supplier" : sessionRole}`}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#3D5126] px-5 text-sm font-bold text-white shadow-sm hover:bg-[#273419] transition-all"
+                >
+                  Buka Operasional Saya ({sessionRole})
+                </Link>
+              )}
+              <Link
+                href={`/login?role=${currentRole}&redirect=/fungsi/${currentRole === "petani" ? "supplier" : currentRole}`}
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-gray-300 bg-white px-5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all"
+              >
+                Ganti Akun Masuk
+              </Link>
+            </div>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#273419]">
