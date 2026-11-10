@@ -1,0 +1,27 @@
+{
+  "url": "https://samanggga.vercel.app/profil/mitra",
+  "title": "Profil & Workspace Mitra Sirkular (Bio-Refinery) | SAMANGGA",
+  "headings": [
+    "Dashboard Terproteksi"
+  ],
+  "fields": [],
+  "buttons": [],
+  "links": [
+    {
+      "text": "SAMANGGA",
+      "href": "/"
+    },
+    {
+      "text": "Masuk / Login",
+      "href": "/login"
+    },
+    {
+      "text": "Masuk ke Akun",
+      "href": "/login?role=mitra&redirect=/profil/mitra"
+    },
+    {
+      "text": "Kembali ke Portal Peran",
+      "href": "/dashboard"
+    }
+  ]
+}

@@ -1,0 +1,285 @@
+{
+  "url": "https://samanggga.vercel.app/daftar",
+  "title": "Pendaftaran Kemitraan | SAMANGGA",
+  "headings": [
+    "Pendaftaran & Aktivasi Kemitraan",
+    "1. Pilih Peran Kemitraan",
+    "2. Lengkapi Data Kemitraan"
+  ],
+  "fields": [
+    {
+      "tag": "input",
+      "type": "text",
+      "name": "namaLengkap",
+      "id": "namaLengkap",
+      "placeholder": "Contoh: H. Agus Supriyadi",
+      "required": true,
+      "min": "",
+      "max": "",
+      "label": "Nama Lengkap Penanggung Jawab *"
+    },
+    {
+      "tag": "input",
+      "type": "email",
+      "name": "email",
+      "id": "email",
+      "placeholder": "nama.anda@gmail.com atau usaha@samangga.id",
+      "required": true,
+      "min": "",
+      "max": "",
+      "label": "Alamat Email Aktif *"
+    },
+    {
+      "tag": "input",
+      "type": "tel",
+      "name": "nomorWhatsapp",
+      "id": "nomorWhatsapp",
+      "placeholder": "81234567890",
+      "required": true,
+      "min": "",
+      "max": "",
+      "label": "Nomor WhatsApp Aktif *"
+    },
+    {
+      "tag": "input",
+      "type": "number",
+      "name": "luasLahan",
+      "id": "luasLahan",
+      "placeholder": "Contoh: 5000",
+      "required": true,
+      "min": "1",
+      "max": "",
+      "label": "Luas Lahan Kebun (m²) *"
+    },
+    {
+      "tag": "select",
+      "type": "select-one",
+      "name": "komoditasUtama",
+      "id": "komoditasUtama",
+      "required": true,
+      "label": "Jenis Komoditas Utama *"
+    },
+    {
+      "tag": "input",
+      "type": "password",
+      "name": "kataSandi",
+      "id": "kataSandi",
+      "placeholder": "Minimal 6 karakter",
+      "required": true,
+      "min": "",
+      "max": "",
+      "label": "Kata Sandi *"
+    },
+    {
+      "tag": "input",
+      "type": "password",
+      "name": "ulangiKataSandi",
+      "id": "ulangiKataSandi",
+      "placeholder": "Ulangi kata sandi",
+      "required": true,
+      "min": "",
+      "max": "",
+      "label": "Ulangi Kata Sandi *"
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "persetujuan",
+      "id": "",
+      "placeholder": "",
+      "required": true,
+      "min": "",
+      "max": "",
+      "label": "Saya menyetujui seluruh Syarat & Ketentuan Kemitraan Adil serta Kebijakan Platfo"
+    }
+  ],
+  "buttons": [
+    "Petani & Kebun",
+    "UMKM Olahan",
+    "Bio-Refinery",
+    "Pembeli / Ritel",
+    "PRODUSEN HULU\nPetani & Gapoktan\n\nPemilik kebun atau kelompok tani pemasok mangga",
+    "INDUSTRI KULINER\nUMKM & Pengolah\n\nProdusen olahan dodol, keripik, puree, sirup, ",
+    "MITRA DAUR ULANG\nBio-Refinery & Residu\n\nFasilitas pengolah kulit, biji, dan daun",
+    "RITEL & KONSUMEN\nPembeli & Ritel\n\nPembeli individu, pemilik toko, restoran, atau",
+    "Simpan Data"
+  ],
+  "links": [
+    {
+      "text": "SAMANGGA",
+      "href": "/"
+    },
+    {
+      "text": "Beranda",
+      "href": "/"
+    },
+    {
+      "text": "Katalog Bahan Baku",
+      "href": "/katalog"
+    },
+    {
+      "text": "Pasar Sirkular",
+      "href": "/pasar-sirkular"
+    },
+    {
+      "text": "Tentang Kami",
+      "href": "/tentang"
+    },
+    {
+      "text": "Keranjang",
+      "href": "/keranjang"
+    },
+    {
+      "text": "Masuk",
+      "href": "/login"
+    },
+    {
+      "text": "Daftar Mitra",
+      "href": "/daftar"
+    },
+    {
+      "text": "Sudah Punya Akun? Masuk ➔",
+      "href": "/login"
+    },
+    {
+      "text": "Masuk ke Akun Anda",
+      "href": "/login"
+    },
+    {
+      "text": "SAMANGGA\nSIRKULAR MANGGA INDRAMAYU",
+      "href": "/"
+    },
+    {
+      "text": "",
+      "href": "https://instagram.com/samangga.id"
+    },
+    {
+      "text": "",
+      "href": "https://wa.me/6282123849012?text=Halo%20SAMANGGA%2C%20saya%20ingin%20bertanya%20seputar%20ekosistem%20mangga%20dan%20limbah%20sirkular"
+    },
+    {
+      "text": "",
+      "href": "https://youtube.com/@samangga_official"
+    },
+    {
+      "text": "",
+      "href": "https://facebook.com/samangga.indramayu"
+    },
+    {
+      "text": "",
+      "href": "https://linkedin.com/company/samangga-indonesia"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/samangga_id"
+    },
+    {
+      "text": "Beranda Utama",
+      "href": "/"
+    },
+    {
+      "text": "Katalog Bahan Baku & Olahan",
+      "href": "/katalog"
+    },
+    {
+      "text": "Pasar Limbah Sirkular",
+      "href": "/pasar-sirkular"
+    },
+    {
+      "text": "Tentang Ekosistem SAMANGGA",
+      "href": "/tentang"
+    },
+    {
+      "text": "Pendaftaran Akun Mitra",
+      "href": "/daftar"
+    },
+    {
+      "text": "Masuk ke Platform",
+      "href": "/login"
+    },
+    {
+      "text": "Petani / Supplier Mangga",
+      "href": "/profil/petani"
+    },
+    {
+      "text": "UMKM Olahan Mangga",
+      "href": "/profil/umkm"
+    },
+    {
+      "text": "Mitra Pengolah Limbah",
+      "href": "/profil/mitra"
+    },
+    {
+      "text": "Konsumen & Pembeli",
+      "href": "/profil/konsumen"
+    },
+    {
+      "text": "Dasbor Admin Sistem",
+      "href": "/profil/admin"
+    },
+    {
+      "text": "Pintu Masuk Peran (Portal)",
+      "href": "/dashboard"
+    },
+    {
+      "text": "Setor Limbah UMKM",
+      "href": "/pasar-sirkular/setor"
+    },
+    {
+      "text": "Jemput Limbah Organik",
+      "href": "/pasar-sirkular/jemput"
+    },
+    {
+      "text": "Pesan Mangga & Olahan",
+      "href": "/pesan"
+    },
+    {
+      "text": "Alur Rantai Pasok Hijau",
+      "href": "/tentang#alur"
+    },
+    {
+      "text": "Standarisasi Mutu Komoditas",
+      "href": "/tentang#standar"
+    },
+    {
+      "text": "Kalkulator Nilai Sirkular",
+      "href": "/tentang#sirkular"
+    },
+    {
+      "text": "Buka Google Maps\n→",
+      "href": "https://maps.google.com/?q=Indramayu"
+    },
+    {
+      "text": "(0234) 712-8901",
+      "href": "tel:02347128901"
+    },
+    {
+      "text": "+62 821-2384-9012",
+      "href": "https://wa.me/6282123849012"
+    },
+    {
+      "text": "halo@samangga.id",
+      "href": "mailto:halo@samangga.id"
+    },
+    {
+      "text": "mitra@samangga.id",
+      "href": "mailto:mitra@samangga.id"
+    },
+    {
+      "text": "Kebijakan Privasi",
+      "href": "/tentang#privasi"
+    },
+    {
+      "text": "Syarat & Ketentuan",
+      "href": "/tentang#syarat"
+    },
+    {
+      "text": "Keamanan Data ERD",
+      "href": "/tentang#keamanan"
+    },
+    {
+      "text": "Panduan Sirkular",
+      "href": "/tentang#panduan"
+    }
+  ]
+}

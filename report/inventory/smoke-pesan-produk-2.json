@@ -1,0 +1,30 @@
+{
+  "url": "https://samanggga.vercel.app/pesan?produk=2",
+  "title": "Pesan Sekarang | Katalog Rantai Pasok SAMANGGA",
+  "headings": [
+    "Pilih Metode Pemesanan",
+    "COD (Ambil di Kasir Mitra)",
+    "Paket (Kirim via Ekspedisi)",
+    "Order summary"
+  ],
+  "fields": [],
+  "buttons": [
+    "Bebas Ongkir (Rp 0)\nCOD (Ambil di Kasir Mitra)\n\nLangsung ke pembayaran & cetak n",
+    "Kirim ke Alamat\nPaket (Kirim via Ekspedisi)\n\nLanjut ke tahap isi alamat pengirim",
+    "BACK",
+    "NEXT STEP (PEMBAYARAN) >",
+    "−",
+    "+",
+    "✕"
+  ],
+  "links": [
+    {
+      "text": "SAMANGGA",
+      "href": "/"
+    },
+    {
+      "text": "BACK TO SHOPPING CART",
+      "href": "/keranjang"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "url": "https://samanggga.vercel.app/profil/petani",
+  "title": "Profil & Workspace Petani (Supplier Hulu) | SAMANGGA",
+  "headings": [
+    "Dashboard Terproteksi"
+  ],
+  "fields": [],
+  "buttons": [],
+  "links": [
+    {
+      "text": "SAMANGGA",
+      "href": "/"
+    },
+    {
+      "text": "Masuk / Login",
+      "href": "/login"
+    },
+    {
+      "text": "Masuk ke Akun",
+      "href": "/login?role=petani&redirect=/profil/petani"
+    },
+    {
+      "text": "Kembali ke Portal Peran",
+      "href": "/dashboard"
+    }
+  ]
+}

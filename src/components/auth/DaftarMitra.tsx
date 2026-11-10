@@ -451,66 +451,10 @@ function DaftarMitraContent(): JSX.Element {
                 Formulir di sebelah kanan akan otomatis menyesuaikan kebutuhan data sesuai peran yang Anda pilih.
               </p>
 
-              <div className="mt-3 block sm:hidden">
-                <div
-                  role="radiogroup"
-                  aria-label="Pilihan Peran Kemitraan (Mobile)"
-                  className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none -mx-1 px-1"
-                >
-                  {ROLES.map((r) => {
-                    const isSelected = selectedRole === r.id;
-                    return (
-                      <button
-                        key={r.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={isSelected}
-                        onClick={() => setSelectedRole(r.id)}
-                        className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold transition-all active:scale-95 ${
-                          isSelected
-                            ? "border-[#166534] bg-[#166534] text-white shadow-sm ring-2 ring-[#166534]/20"
-                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50 shadow-xs"
-                        }`}
-                      >
-                        <span
-                          className={`flex h-5 w-5 items-center justify-center rounded-full ${
-                            isSelected ? "bg-white/20 text-white" : "bg-emerald-50 text-[#166534]"
-                          }`}
-                        >
-                          {getRoleIcon(r.id)}
-                        </span>
-                        <span>{r.shortTitle}</span>
-                        {isSelected && (
-                          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[#166534]">
-                            <CheckIcon className="h-2.5 w-2.5" />
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-2.5 rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs leading-relaxed text-[#273419]">
-                  <div className="flex items-center justify-between font-bold text-[#166534]">
-                    <span className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-[#166534]" />
-                      {selectedRoleMeta.title}
-                    </span>
-                    <span className="rounded-full bg-white px-2 py-0.5 text-[10px] uppercase tracking-wider text-[#166534] shadow-xs">
-                      {selectedRoleMeta.badge}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-gray-600">{selectedRoleMeta.description}</p>
-                  <p className="mt-1 text-[11px] font-semibold text-[#166534]">
-                    ✨ {selectedRoleMeta.tag}
-                  </p>
-                </div>
-              </div>
-
               <div
                 role="radiogroup"
-                aria-label="Pilihan Peran Kemitraan (Desktop)"
-                className="mt-4 hidden sm:grid sm:grid-cols-2 gap-3"
+                aria-label="Pilihan Peran Kemitraan"
+                className="mt-4 grid grid-cols-2 gap-3"
               >
                 {ROLES.map((r) => {
                   const isSelected = selectedRole === r.id;
@@ -519,9 +463,12 @@ function DaftarMitraContent(): JSX.Element {
                       key={r.id}
                       type="button"
                       role="radio"
+                      data-role={r.id}
+                      data-testid={`role-${r.id}`}
                       aria-checked={isSelected}
+                      aria-label={`${r.title} (${r.shortTitle})`}
                       onClick={() => setSelectedRole(r.id)}
-                      className={`group relative flex flex-col justify-between rounded-xl p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166534] ${
+                      className={`group relative flex flex-col justify-between rounded-xl p-3.5 sm:p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166534] ${
                         isSelected
                           ? "border-2 border-[#166534] bg-emerald-50/25 shadow-md ring-2 ring-[#166534]/15"
                           : "border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/60 shadow-xs"
@@ -529,7 +476,7 @@ function DaftarMitraContent(): JSX.Element {
                     >
                       <div className="flex items-start justify-between">
                         <span
-                          className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+                          className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors ${
                             isSelected
                               ? "bg-[#166534] text-white"
                               : "bg-gray-100 text-gray-600 group-hover:bg-[#166534]/10 group-hover:text-[#166534]"
@@ -547,19 +494,22 @@ function DaftarMitraContent(): JSX.Element {
                         )}
                       </div>
 
-                      <div className="mt-3">
+                      <div className="mt-2.5 sm:mt-3">
                         <span className="block text-[10px] font-bold uppercase tracking-wider text-[#166534]">
                           {r.badge}
                         </span>
-                        <h3 className="text-sm font-bold leading-snug text-[#273419]">
+                        <h3 className="text-xs sm:text-sm font-bold leading-snug text-[#273419]">
                           {r.title}
                         </h3>
-                        <p className="mt-1 text-xs leading-relaxed text-gray-600 line-clamp-3">
+                        <p className="text-[11px] font-medium text-emerald-800 sm:hidden">
+                          ({r.shortTitle})
+                        </p>
+                        <p className="mt-1 hidden sm:block text-xs leading-relaxed text-gray-600 line-clamp-3">
                           {r.description}
                         </p>
                       </div>
 
-                      <div className="mt-3 pt-2.5 border-t border-gray-100">
+                      <div className="mt-2 sm:mt-3 pt-2 sm:pt-2.5 border-t border-gray-100">
                         <span className="text-[10px] font-medium text-gray-500">
                           {r.tag}
                         </span>
@@ -905,8 +855,9 @@ function DaftarMitraContent(): JSX.Element {
                   </div>
                 ) : (
                   <div className="pt-1">
-                    <label className="flex items-start gap-2.5 cursor-pointer text-xs leading-relaxed text-gray-700">
+                    <label htmlFor="persetujuan" className="flex items-start gap-2.5 cursor-pointer text-xs leading-relaxed text-gray-700">
                       <input
+                        id="persetujuan"
                         type="checkbox"
                         name="persetujuan"
                         required
@@ -928,9 +879,12 @@ function DaftarMitraContent(): JSX.Element {
                 <div className="pt-3">
                   <button
                     type="submit"
+                    id="btn-submit-daftar"
+                    name="submit"
+                    data-testid="submit-daftar"
                     className="w-full inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#3D5126] px-6 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#273419] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3D5126] focus-visible:ring-offset-2"
                   >
-                    Simpan Data
+                    <span>Daftar Kemitraan (Simpan Data)</span>
                     <ArrowRightIcon className="h-4 w-4" />
                   </button>
                 </div>

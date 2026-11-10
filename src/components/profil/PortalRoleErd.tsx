@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { JSX } from "react";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Navbar } from "@/components/layout/SiteNavbar";
@@ -13,6 +14,7 @@ import {
   SproutIcon,
 } from "@/components/ui/Icons";
 import { DEFAULT_PROFILES, ROLE_NAVIGATION_LIST, type RoleSlug } from "@/data/profil";
+import { findUserByEmail, getActiveUserEmail } from "@/lib/auth";
 
 function getRoleIcon(slug: RoleSlug): JSX.Element {
   switch (slug) {
@@ -53,11 +55,46 @@ const ERD_CLUSTERS = [
 ] as const;
 
 export default function PortalRoleErd(): JSX.Element {
+  const [activeUser, setActiveUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const email = getActiveUserEmail();
+    if (email) {
+      setActiveUser(findUserByEmail(email));
+    }
+  }, []);
+
+  const isMenunggu = Boolean(
+    activeUser && activeUser.statusVerifikasi === "Menunggu" && activeUser.role !== "admin"
+  );
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#273419]">
       <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+        {isMenunggu && (
+          <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:p-5 text-amber-950 shadow-sm flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white font-bold text-sm shadow-xs">
+              ⏳
+            </span>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                  Menunggu Verifikasi Admin
+                </span>
+                <h2 className="text-sm font-extrabold text-amber-950">
+                  Akun Anda Sedang Ditinjau Admin (Akses Dibatasi)
+                </h2>
+              </div>
+              <p className="mt-1 text-xs text-amber-900 leading-relaxed">
+                Akun kemitraan Anda (<strong>{activeUser?.namaLengkap}</strong>) saat ini berstatus <strong>Menunggu Verifikasi</strong> oleh Administrator SAMANGGA. Akses ke menu operasional transaksi dan penambahan data komoditas dibatasi sementara hingga disetujui.
+              </p>
+            </div>
+          </div>
+        )}
+
         <header className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs sm:p-8">
           <div className="inline-flex items-center gap-2 rounded-full bg-[#3D5126]/10 px-3.5 py-1 text-xs font-extrabold uppercase tracking-wider text-[#3D5126]">
             Arsitektur 14 Tabel & 5 Peran Pengguna

@@ -113,6 +113,11 @@ function JemputLimbahContent(): JSX.Element {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (tanggalJemput < todayStr) {
+      alert("Tanggal penjemputan tidak boleh tanggal lampau. Silakan pilih hari ini atau tanggal setelahnya.");
+      return;
+    }
     createWastePickup({
       id_limbah: listing.id,
       mitraId: 303,
@@ -527,10 +532,20 @@ function JemputLimbahContent(): JSX.Element {
                     </label>
                     <input
                       id="tanggalJemput"
+                      name="tanggalJemput"
                       type="date"
                       required
+                      min={new Date().toISOString().split("T")[0]}
                       value={tanggalJemput}
-                      onChange={(e) => setTanggalJemput(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const todayStr = new Date().toISOString().split("T")[0];
+                        if (val && val < todayStr) {
+                          setTanggalJemput(todayStr);
+                        } else {
+                          setTanggalJemput(val);
+                        }
+                      }}
                       className="mt-1 h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-[#273419] focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#3D5126]"
                     />
                   </div>

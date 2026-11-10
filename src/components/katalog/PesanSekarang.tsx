@@ -121,12 +121,36 @@ function PesanSekarangContent(): JSX.Element {
   // Baca keranjang jika ada
   const cartItems = useSyncExternalStore(subscribeCart, getCartItems, getServerCartItems);
 
+  // Dynamic arrival date helper
+  const getEstimasiTanggal = (hariTambahan: number): string => {
+    const d = new Date();
+    d.setDate(d.getDate() + hariTambahan);
+    return d.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const [directQuantities, setDirectQuantities] = useState<Record<string, number>>({});
+
+  const handleUpdateItemQuantity = (id: string, newQty: number): void => {
+    if (newQty < 1) return;
+    setDirectQuantities((prev) => ({
+      ...prev,
+      [id]: newQty,
+    }));
+    updateCartQuantity(id, newQty);
+  };
+
   // Tentukan item apa yang sedang di-checkout
   const checkoutItems = useMemo<CheckoutItem[]>(() => {
     if (queryProd && PRODUCTS.length > 0) {
       const prodId = resolveProductId(queryProd);
       const p = PRODUCTS.find((it) => it.id === prodId) ?? PRODUCTS[0];
       if (p) {
+        const itemQty = directQuantities[p.id] ?? Math.min(queryQty, p.stock);
         return [
           {
             id: p.id,
@@ -134,7 +158,7 @@ function PesanSekarangContent(): JSX.Element {
             category: p.category,
             price: p.price,
             priceUnit: p.priceUnit,
-            quantity: Math.min(queryQty, p.stock),
+            quantity: itemQty,
             seller: p.seller,
             location: p.location,
             image: p.image,
@@ -149,7 +173,7 @@ function PesanSekarangContent(): JSX.Element {
         category: "Katalog Mangga",
         price: c.price,
         priceUnit: c.priceUnit,
-        quantity: c.quantity,
+        quantity: directQuantities[c.id] ?? c.quantity,
         seller: c.seller,
         location: c.location,
         image: c.image,
@@ -158,6 +182,7 @@ function PesanSekarangContent(): JSX.Element {
     // Fallback ke produk pertama jika tersedia
     if (PRODUCTS.length > 0) {
       const p = PRODUCTS[0];
+      const itemQty = directQuantities[p.id] ?? 1;
       return [
         {
           id: p.id,
@@ -165,7 +190,7 @@ function PesanSekarangContent(): JSX.Element {
           category: p.category,
           price: p.price,
           priceUnit: p.priceUnit,
-          quantity: 1,
+          quantity: itemQty,
           seller: p.seller,
           location: p.location,
           image: p.image,
@@ -173,7 +198,7 @@ function PesanSekarangContent(): JSX.Element {
       ];
     }
     return [];
-  }, [queryProd, queryQty, cartItems]);
+  }, [queryProd, queryQty, cartItems, directQuantities]);
 
   // Alur Pemesanan Sesuai Permintaan User:
   // Tahap 1: Pilih menu mau COD atau PAKET
@@ -572,7 +597,7 @@ function PesanSekarangContent(): JSX.Element {
                     Tahap 2 (Paket)
                   </span>
                   <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">
-                    Address details
+                    Detail Alamat Pengiriman (Address details)
                   </h1>
                   <p className="mt-1 text-xs sm:text-sm text-gray-500">
                     Lengkapi alamat pengiriman hasil panen mangga segar Indramayu langsung dari kebun mitra.
@@ -581,7 +606,7 @@ function PesanSekarangContent(): JSX.Element {
 
                 <form id={formId} onSubmit={handleNextFromAddress} className="mt-6 space-y-6">
                   <div>
-                    <h2 className="text-base font-bold text-gray-900">Delivery address</h2>
+                    <h2 className="text-base font-bold text-gray-900">Alamat Pengiriman (Delivery address)</h2>
 
                     <div className="mt-4 space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -590,15 +615,16 @@ function PesanSekarangContent(): JSX.Element {
                             htmlFor="firstName"
                             className="block text-[10px] font-bold uppercase tracking-wider text-gray-500"
                           >
-                            First Name
+                            NAMA DEPAN / FIRST NAME
                           </label>
                           <input
                             id="firstName"
+                            name="firstName"
                             type="text"
                             required
                             value={firstName}
                             onChange={(e) => setFirstName(e.target.value)}
-                            placeholder="Mateusz"
+                            placeholder="Budi"
                             className="mt-1 h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#3D5126] focus:outline-none focus:ring-1 focus:ring-[#3D5126]"
                           />
                         </div>
@@ -607,15 +633,16 @@ function PesanSekarangContent(): JSX.Element {
                             htmlFor="secondName"
                             className="block text-[10px] font-bold uppercase tracking-wider text-gray-500"
                           >
-                            Second Name
+                            NAMA BELAKANG / SECOND NAME
                           </label>
                           <input
                             id="secondName"
+                            name="secondName"
                             type="text"
                             required
                             value={secondName}
                             onChange={(e) => setSecondName(e.target.value)}
-                            placeholder="Wierzbicki"
+                            placeholder="Santoso"
                             className="mt-1 h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#3D5126] focus:outline-none focus:ring-1 focus:ring-[#3D5126]"
                           />
                         </div>
@@ -626,15 +653,16 @@ function PesanSekarangContent(): JSX.Element {
                           htmlFor="streetAddress"
                           className="block text-[10px] font-bold uppercase tracking-wider text-gray-500"
                         >
-                          Street Address
+                          ALAMAT JALAN &amp; NOMOR RUMAH / STREET ADDRESS
                         </label>
                         <input
                           id="streetAddress"
+                          name="streetAddress"
                           type="text"
                           required
                           value={streetAddress}
                           onChange={(e) => setStreetAddress(e.target.value)}
-                          placeholder="Street and number"
+                          placeholder="Contoh: Jl. Mayor Dasuki No. 45, RT 02/RW 03"
                           className="mt-1 h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#3D5126] focus:outline-none focus:ring-1 focus:ring-[#3D5126]"
                         />
                       </div>
@@ -645,15 +673,16 @@ function PesanSekarangContent(): JSX.Element {
                             htmlFor="city"
                             className="block text-[10px] font-bold uppercase tracking-wider text-gray-500"
                           >
-                            City
+                            KOTA / KABUPATEN / CITY
                           </label>
                           <input
                             id="city"
+                            name="city"
                             type="text"
                             required
                             value={city}
                             onChange={(e) => setCity(e.target.value)}
-                            placeholder="City"
+                            placeholder="Indramayu"
                             className="mt-1 h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#3D5126] focus:outline-none focus:ring-1 focus:ring-[#3D5126]"
                           />
                         </div>
@@ -662,15 +691,16 @@ function PesanSekarangContent(): JSX.Element {
                             htmlFor="zipCode"
                             className="block text-[10px] font-bold uppercase tracking-wider text-gray-500"
                           >
-                            Zip Code
+                            KODE POS / ZIP CODE
                           </label>
                           <input
                             id="zipCode"
+                            name="zipCode"
                             type="text"
                             required
                             value={zipCode}
                             onChange={(e) => setZipCode(e.target.value)}
-                            placeholder="00-000"
+                            placeholder="45252"
                             className="mt-1 h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#3D5126] focus:outline-none focus:ring-1 focus:ring-[#3D5126]"
                           />
                         </div>
@@ -681,10 +711,11 @@ function PesanSekarangContent(): JSX.Element {
                           htmlFor="country"
                           className="block text-[10px] font-bold uppercase tracking-wider text-gray-500"
                         >
-                          Country
+                          NEGARA / COUNTRY
                         </label>
                         <select
                           id="country"
+                          name="country"
                           value={country}
                           onChange={(e) => setCountry(e.target.value)}
                           className="mt-1 h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-[#3D5126] focus:outline-none focus:ring-1 focus:ring-[#3D5126]"
@@ -692,7 +723,6 @@ function PesanSekarangContent(): JSX.Element {
                           <option value="Indonesia">Indonesia</option>
                           <option value="Malaysia">Malaysia</option>
                           <option value="Singapura">Singapura</option>
-                          <option value="Poland">Poland</option>
                         </select>
                       </div>
 
@@ -701,15 +731,16 @@ function PesanSekarangContent(): JSX.Element {
                           htmlFor="phoneNumber"
                           className="block text-[10px] font-bold uppercase tracking-wider text-gray-500"
                         >
-                          Phone Number
+                          NOMOR TELEPON / PHONE NUMBER
                         </label>
                         <input
                           id="phoneNumber"
+                          name="phoneNumber"
                           type="tel"
                           required
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value)}
-                          placeholder="123456789"
+                          placeholder="081234567890"
                           className="mt-1 h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#3D5126] focus:outline-none focus:ring-1 focus:ring-[#3D5126]"
                         />
                         <p className="mt-1 text-[11px] text-gray-500">
@@ -720,20 +751,22 @@ function PesanSekarangContent(): JSX.Element {
                   </div>
 
                   <div className="pt-4 border-t border-gray-100">
-                    <h2 className="text-base font-bold text-gray-900">Billing address</h2>
+                    <h2 className="text-base font-bold text-gray-900">Alamat Penagihan (Billing address)</h2>
                     <label className="mt-3 flex items-center gap-2.5 text-xs sm:text-sm font-medium text-gray-700 cursor-pointer select-none">
                       <input
                         type="checkbox"
+                        id="useDeliveryAsBilling"
+                        name="useDeliveryAsBilling"
                         checked={useDeliveryAsBilling}
                         onChange={(e) => setUseDeliveryAsBilling(e.target.checked)}
                         className="h-4 w-4 rounded border-gray-300 text-[#3D5126] focus:ring-[#3D5126]"
                       />
-                      <span>Use delivery address as billing address</span>
+                      <span>Gunakan alamat pengiriman sebagai alamat penagihan (Use delivery address as billing address)</span>
                     </label>
                   </div>
 
                   <div className="pt-4 border-t border-gray-100">
-                    <h2 className="text-base font-bold text-gray-900">Delivery method</h2>
+                    <h2 className="text-base font-bold text-gray-900">Metode Pengiriman (Delivery method)</h2>
 
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div
@@ -772,8 +805,8 @@ function PesanSekarangContent(): JSX.Element {
                         </div>
 
                         <div className="mt-4">
-                          <p className="text-[10px] text-gray-400">Package arrives:</p>
-                          <p className="text-xs font-bold text-gray-800">Tomorrow</p>
+                          <p className="text-[10px] text-gray-400">Estimasi Tiba (Package arrives):</p>
+                          <p className="text-xs font-bold text-gray-800">Besok ({getEstimasiTanggal(1)})</p>
                         </div>
                       </div>
 
@@ -813,8 +846,8 @@ function PesanSekarangContent(): JSX.Element {
                         </div>
 
                         <div className="mt-4">
-                          <p className="text-[10px] text-gray-400">Package arrives:</p>
-                          <p className="text-xs font-bold text-gray-800">Friday, 06.11.2026</p>
+                          <p className="text-[10px] text-gray-400">Estimasi Tiba (Package arrives):</p>
+                          <p className="text-xs font-bold text-gray-800">{getEstimasiTanggal(3)}</p>
                         </div>
                       </div>
                     </div>
@@ -1323,7 +1356,7 @@ function PesanSekarangContent(): JSX.Element {
                       <div className="inline-flex items-center rounded-lg border border-gray-200 bg-gray-50">
                         <button
                           type="button"
-                          onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+                          onClick={() => handleUpdateItemQuantity(item.id, item.quantity - 1)}
                           className="h-6 w-6 text-xs font-bold text-gray-600 hover:bg-gray-200 rounded-l-lg"
                           title="Kurangi"
                         >
@@ -1334,7 +1367,7 @@ function PesanSekarangContent(): JSX.Element {
                         </span>
                         <button
                           type="button"
-                          onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+                          onClick={() => handleUpdateItemQuantity(item.id, item.quantity + 1)}
                           className="h-6 w-6 text-xs font-bold text-gray-600 hover:bg-gray-200 rounded-r-lg"
                           title="Tambah"
                         >
@@ -1366,7 +1399,7 @@ function PesanSekarangContent(): JSX.Element {
                 </div>
                 <div className="flex items-center justify-between">
                   <span>
-                    {orderType === "cod" ? "Biaya Ambil (COD Kasir)" : "Shipping cost"}
+                    {orderType === "cod" ? "Biaya Ambil (COD Kasir)" : "Ongkir / Shipping cost"}
                   </span>
                   <span className="font-bold text-gray-900">
                     {shippingCost === 0 ? "Gratis (Rp 0)" : formatRupiah(shippingCost)}
@@ -1375,7 +1408,7 @@ function PesanSekarangContent(): JSX.Element {
               </div>
 
               <div className="mt-3 flex items-baseline justify-between border-t border-gray-200 pt-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-900">Total</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-900">Total Tagihan</span>
                 <span className="text-xl font-extrabold text-gray-900">
                   {formatRupiah(grandTotal)}
                 </span>
@@ -1384,21 +1417,21 @@ function PesanSekarangContent(): JSX.Element {
 
             <div className="rounded-2xl border border-gray-200/90 bg-white p-5 shadow-sm">
               <h3 className="text-xs font-bold uppercase tracking-wider text-gray-900">
-                Need help? Contact us!
+                Butuh Bantuan? Hubungi Kami
               </h3>
-              <p className="mt-2 text-[11px] text-gray-500">Please call:</p>
+              <p className="mt-2 text-[11px] text-gray-500">Telepon Layanan Pelanggan:</p>
               <p className="text-lg font-black text-gray-900 tracking-tight">
                 +62 812 321 123
               </p>
               <div className="mt-2 space-y-0.5 text-[11px] text-gray-500">
-                <p>Monday - Friday: 8:00 - 20:00</p>
-                <p>Saturday: 8:00 - 16:00</p>
+                <p>Senin - Jumat: 08:00 - 20:00 WIB</p>
+                <p>Sabtu: 08:00 - 16:00 WIB</p>
               </div>
             </div>
 
             <div>
               <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">
-                Delivery methods
+                Metode Pengiriman (Delivery methods)
               </span>
               <div className="flex items-center gap-2">
                 <div className="flex h-9 items-center rounded-md border border-gray-200 bg-white px-3 shadow-2xs">
@@ -1415,7 +1448,7 @@ function PesanSekarangContent(): JSX.Element {
 
             <div>
               <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">
-                Payment methods
+                Metode Pembayaran (Payment methods)
               </span>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex h-9 items-center rounded-md border border-gray-200 bg-white px-2.5 shadow-2xs">
@@ -1443,7 +1476,7 @@ function PesanSekarangContent(): JSX.Element {
                 <LockIcon className="h-5 w-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-gray-900">Secure shopping</h4>
+                <h4 className="text-sm font-bold text-gray-900">Transaksi Aman &amp; Terenkripsi (Secure shopping)</h4>
                 <p className="mt-1 text-xs text-gray-500 leading-relaxed">
                   Enkripsi SSL 256-bit dan nota transaksi terverifikasi menjamin keamanan transaksi Anda.
                 </p>
@@ -1455,7 +1488,7 @@ function PesanSekarangContent(): JSX.Element {
                 <TruckIcon className="h-5 w-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-gray-900">Free and easy returns</h4>
+                <h4 className="text-sm font-bold text-gray-900">Garansi Panen Segar &amp; Retur (Free returns)</h4>
                 <p className="mt-1 text-xs text-gray-500 leading-relaxed">
                   Garansi panen segar 100%. Ganti buah baru jika terjadi cacat saat pengambilan atau pengiriman.
                 </p>
@@ -1467,7 +1500,7 @@ function PesanSekarangContent(): JSX.Element {
                 <ShieldCheckIcon className="h-5 w-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-gray-900">Direct from Farmers</h4>
+                <h4 className="text-sm font-bold text-gray-900">Langsung dari Kebun Petani (Direct from Farmers)</h4>
                 <p className="mt-1 text-xs text-gray-500 leading-relaxed">
                   100% dipasok langsung dari kelompok tani binaan dan kebun bersertifikat Indramayu tanpa tengkulak.
                 </p>

@@ -693,6 +693,31 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
     );
   }, [currentRole, allMitraUsers, profile.email, activeMitraTestId]);
 
+  const currentActiveUser = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const activeEmail = getActiveUserEmail();
+    if (!activeEmail) return null;
+    return (
+      registeredUsersList.find((u) => u.email.toLowerCase() === activeEmail.toLowerCase()) ??
+      findUserByEmail(activeEmail) ??
+      null
+    );
+  }, [registeredUsersList]);
+
+  const isPendingVerification = Boolean(
+    currentRole !== "admin" &&
+      ((currentActiveUser && currentActiveUser.statusVerifikasi === "Menunggu") ||
+        profile.status_verifikasi === "Menunggu" ||
+        (currentRole === "mitra" && currentMitraUser?.statusVerifikasi === "Menunggu"))
+  );
+
+  const isRejectedVerification = Boolean(
+    currentRole !== "admin" &&
+      ((currentActiveUser && currentActiveUser.statusVerifikasi === "Ditolak") ||
+        profile.status_verifikasi === "Ditolak" ||
+        (currentRole === "mitra" && currentMitraUser?.statusVerifikasi === "Ditolak"))
+  );
+
   const handleAccMitra = (mitra: RegisteredUser): void => {
     const updated = updateUserVerification(mitra.id, "Terverifikasi");
     if (updated) {
@@ -814,6 +839,10 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   });
 
   const openCreateProduk = (): void => {
+    if (isPendingVerification) {
+      alert("Akses Dibatasi: Akun Anda sedang Menunggu Verifikasi Admin. Anda belum dapat mengunggah komoditas baru hingga disetujui.");
+      return;
+    }
     setEditingProdukId(null);
     setFormProduk({
       nama_produk: "",
@@ -900,6 +929,10 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
   });
 
   const openCreateLimbah = (): void => {
+    if (isPendingVerification) {
+      alert("Akses Dibatasi: Akun Anda sedang Menunggu Verifikasi Admin. Anda belum dapat mendaftarkan setoran limbah baru hingga disetujui.");
+      return;
+    }
     setEditingLimbahId(null);
     setFormLimbah({
       jenis_limbah: "Kulit",
@@ -1981,106 +2014,107 @@ export default function ProfilRole({ fixedRole }: ProfilRoleProps): JSX.Element 
             </div>
           )}
 
-          {currentRole === "mitra" && currentMitraUser && (
+          {/* Banner Status Verifikasi Kemitraan (Petani/Supplier, UMKM, Mitra, Konsumen) */}
+          {isPendingVerification && (
             <div className="space-y-3">
-              {currentMitraUser.statusVerifikasi === "Menunggu" && (
-                <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-100/70 to-amber-50 p-4 sm:p-5 shadow-sm text-amber-950">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white font-bold text-sm shadow-xs">
-                        ⏳
-                      </span>
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
-                            Menunggu Verifikasi Admin
-                          </span>
-                          <h2 className="text-sm font-extrabold text-amber-950">
-                            Berkas Pendaftaran Kemitraan Sedang Ditinjau
-                          </h2>
-                        </div>
-                        <p className="mt-1 text-xs text-amber-900 leading-relaxed">
-                          Foto bukti lahan/fasilitas dan berkas kemitraan <strong>{(currentMitraUser.extraData?.namaInstansi as string) || currentMitraUser.namaLengkap}</strong> sedang dalam antrean verifikasi oleh Admin SAMANGGA. Akses penuh operasional logistik sirkular akan otomatis aktif setelah disetujui.
-                        </p>
-                        {currentMitraUser.fotoPersyaratanName && (
-                          <p className="mt-1 text-[11px] font-mono text-amber-800">
-                            📎 Berkas terlampir: {currentMitraUser.fotoPersyaratanName}
-                          </p>
-                        )}
+              <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-100/70 to-amber-50 p-4 sm:p-5 shadow-sm text-amber-950">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white font-bold text-sm shadow-xs">
+                      ⏳
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                          Menunggu Verifikasi Admin
+                        </span>
+                        <h2 className="text-sm font-extrabold text-amber-950">
+                          Akun Kemitraan Sedang Ditinjau (Akses Operasional Dibatasi)
+                        </h2>
                       </div>
+                      <p className="mt-1 text-xs text-amber-900 leading-relaxed">
+                        Akun kemitraan Anda (<strong>{currentActiveUser?.namaLengkap || profile.nama_lengkap}</strong>) saat ini berstatus <strong>Menunggu Verifikasi</strong> oleh Administrator SAMANGGA. Akses penambahan data produk, transaksi, dan pencatatan kas dibatasi sementara hingga disetujui.
+                      </p>
+                      {(currentActiveUser?.fotoPersyaratanName || (currentRole === "mitra" && currentMitraUser?.fotoPersyaratanName)) && (
+                        <p className="mt-1 text-[11px] font-mono text-amber-800">
+                          📎 Berkas terlampir: {currentActiveUser?.fotoPersyaratanName || currentMitraUser?.fotoPersyaratanName}
+                        </p>
+                      )}
                     </div>
-                    {currentMitraUser.fotoPersyaratanUrl && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setInspectPhoto({
-                            url: currentMitraUser.fotoPersyaratanUrl!,
-                            title: (currentMitraUser.extraData?.namaInstansi as string) || currentMitraUser.namaLengkap,
-                            subtitle: currentMitraUser.fotoPersyaratanName || "Berkas Foto Terlampir",
-                          })
-                        }
-                        className="shrink-0 rounded-xl border border-amber-400 bg-white px-3.5 py-2 text-xs font-bold text-amber-900 shadow-xs hover:bg-amber-50 active:scale-95 transition-all"
-                      >
-                        🔍 Lihat Foto Saya
-                      </button>
-                    )}
                   </div>
-                </div>
-              )}
-
-              {currentMitraUser.statusVerifikasi === "Ditolak" && (
-                <div className="rounded-2xl border border-red-300 bg-gradient-to-r from-red-50 via-rose-100/90 to-red-50 p-4 sm:p-5 shadow-sm text-red-950 space-y-3">
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white font-bold text-sm shadow-xs">
-                        🚨
-                      </span>
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="rounded-md bg-red-600 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
-                            Verifikasi Ditolak / Kirim Ulang
-                          </span>
-                          <h2 className="text-sm font-extrabold text-red-950">
-                            Dokumen / Foto Kemitraan Perlu Dikirim Ulang
-                          </h2>
-                        </div>
-                        <p className="mt-1 text-xs text-red-800 leading-relaxed">
-                          Admin telah memeriksa berkas pendaftaran Anda dan meminta untuk melakukan unggah ulang foto dokumen atau fasilitas lahan yang lebih jelas.
-                        </p>
-                        <div className="mt-2.5 rounded-xl border border-red-200 bg-white/95 p-3 text-xs text-red-900 shadow-2xs">
-                          <p className="font-extrabold text-red-950 flex items-center gap-1.5">
-                            <span>💬 Catatan & Instruksi Admin:</span>
-                          </p>
-                          <p className="mt-1 font-medium italic">
-                            &ldquo;{currentMitraUser.alasanPenolakan || "Foto atau dokumen kemitraan tidak terbaca jelas. Mohon kirimkan ulang foto dengan resolusi tinggi."}&rdquo;
-                          </p>
-                        </div>
-                        <div className="mt-2 flex items-center gap-2 flex-wrap text-[11px] text-red-800">
-                          <span>📧 Notifikasi resmi penolakan foto telah dikirim ke: <strong>{currentMitraUser.email}</strong></span>
-                          <button
-                            type="button"
-                            onClick={() => setIsKotakEmailOpen(true)}
-                            className="font-bold underline text-red-900 hover:text-red-950 cursor-pointer"
-                          >
-                            Buka Surat Email Notifikasi →
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                  {(currentActiveUser?.fotoPersyaratanUrl || (currentRole === "mitra" && currentMitraUser?.fotoPersyaratanUrl)) && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setResubmitPreview(null);
-                        setResubmitChosenName("");
-                        setIsResubmitModalOpen(true);
-                      }}
-                      className="shrink-0 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-red-700 active:scale-95 transition-all"
+                      onClick={() =>
+                        setInspectPhoto({
+                          url: currentActiveUser?.fotoPersyaratanUrl || currentMitraUser!.fotoPersyaratanUrl!,
+                          title: (currentActiveUser?.extraData?.namaInstansi as string) || currentActiveUser?.namaLengkap || currentMitraUser?.namaLengkap || "Foto Berkas",
+                          subtitle: currentActiveUser?.fotoPersyaratanName || currentMitraUser?.fotoPersyaratanName || "Berkas Foto Terlampir",
+                        })
+                      }
+                      className="shrink-0 rounded-xl border border-amber-400 bg-white px-3.5 py-2 text-xs font-bold text-amber-900 shadow-xs hover:bg-amber-50 active:scale-95 transition-all"
                     >
-                      📷 Kirim Ulang Foto Berkas
+                      🔍 Lihat Foto Saya
                     </button>
-                  </div>
+                  )}
                 </div>
-              )}
+              </div>
+            </div>
+          )}
+
+          {isRejectedVerification && (
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-red-300 bg-gradient-to-r from-red-50 via-rose-100/90 to-red-50 p-4 sm:p-5 shadow-sm text-red-950 space-y-3">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white font-bold text-sm shadow-xs">
+                      🚨
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="rounded-md bg-red-600 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                          Verifikasi Ditolak / Kirim Ulang
+                        </span>
+                        <h2 className="text-sm font-extrabold text-red-950">
+                          Dokumen / Foto Kemitraan Perlu Dikirim Ulang
+                        </h2>
+                      </div>
+                      <p className="mt-1 text-xs text-red-800 leading-relaxed">
+                        Admin telah memeriksa berkas pendaftaran Anda dan meminta untuk melakukan unggah ulang foto dokumen atau fasilitas lahan yang lebih jelas.
+                      </p>
+                      <div className="mt-2.5 rounded-xl border border-red-200 bg-white/95 p-3 text-xs text-red-900 shadow-2xs">
+                        <p className="font-extrabold text-red-950 flex items-center gap-1.5">
+                          <span>💬 Catatan &amp; Instruksi Admin:</span>
+                        </p>
+                        <p className="mt-1 font-medium italic">
+                          &ldquo;{currentActiveUser?.alasanPenolakan || currentMitraUser?.alasanPenolakan || "Foto atau dokumen kemitraan tidak terbaca jelas. Mohon kirimkan ulang foto dengan resolusi tinggi."}&rdquo;
+                        </p>
+                      </div>
+                      <div className="mt-2 flex items-center gap-2 flex-wrap text-[11px] text-red-800">
+                        <span>📧 Notifikasi resmi penolakan foto telah dikirim ke: <strong>{currentActiveUser?.email || currentMitraUser?.email || profile.email}</strong></span>
+                        <button
+                          type="button"
+                          onClick={() => setIsKotakEmailOpen(true)}
+                          className="font-bold underline text-red-900 hover:text-red-950 cursor-pointer"
+                        >
+                          Buka Surat Email Notifikasi →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResubmitPreview(null);
+                      setResubmitChosenName("");
+                      setIsResubmitModalOpen(true);
+                    }}
+                    className="shrink-0 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-red-700 active:scale-95 transition-all"
+                  >
+                    📷 Kirim Ulang Foto Berkas
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

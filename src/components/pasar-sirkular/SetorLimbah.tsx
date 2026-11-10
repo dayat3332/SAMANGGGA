@@ -33,6 +33,10 @@ export default function SetorLimbah(): JSX.Element {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
+    if (!beratKg || beratKg <= 0) {
+      alert("Estimasi berat limbah harus bernilai positif (minimal 1 kg)!");
+      return;
+    }
     const finalFoto = fotoLimbah || JENIS_IMAGE_MAP[jenis];
     if (!finalFoto) {
       alert("Foto limbah wajib diunggah!");
@@ -189,6 +193,7 @@ export default function SetorLimbah(): JSX.Element {
                     </label>
                     <input
                       id="pemilik"
+                      name="pemilik"
                       type="text"
                       required
                       value={pemilik}
@@ -203,6 +208,7 @@ export default function SetorLimbah(): JSX.Element {
                     </label>
                     <input
                       id="noWa"
+                      name="noWa"
                       type="tel"
                       required
                       value={noWhatsapp}
@@ -220,11 +226,15 @@ export default function SetorLimbah(): JSX.Element {
                     </label>
                     <input
                       id="beratKg"
+                      name="beratKg"
                       type="number"
-                      min={10}
+                      min={1}
                       required
                       value={beratKg}
-                      onChange={(e) => setBeratKg(Math.max(10, Number(e.target.value) || 10))}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setBeratKg(val < 1 ? 1 : val);
+                      }}
                       className="mt-1 h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-[#273419] focus:border-[#3D5126] focus:outline-none focus:ring-2 focus:ring-[#3D5126]"
                     />
                   </div>
@@ -234,6 +244,7 @@ export default function SetorLimbah(): JSX.Element {
                     </label>
                     <input
                       id="lokasi"
+                      name="lokasi"
                       type="text"
                       required
                       value={lokasi}
@@ -250,6 +261,7 @@ export default function SetorLimbah(): JSX.Element {
                   </label>
                   <input
                     id="kondisi"
+                    name="kondisi"
                     type="text"
                     required
                     value={kondisi}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { FormEvent, JSX } from "react";
-import { getActiveRole, getActiveUserEmail } from "@/lib/auth";
+import { findUserByEmail, getActiveRole, getActiveUserEmail } from "@/lib/auth";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Navbar } from "@/components/layout/SiteNavbar";
 import {
@@ -76,6 +76,19 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
   const profile = DEFAULT_PROFILES[currentRole];
 
   const [banner, setBanner] = useState<string | null>(null);
+  const [activeUser, setActiveUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const email = getActiveUserEmail();
+    if (email) {
+      setActiveUser(findUserByEmail(email));
+    }
+  }, []);
+
+  const isMenunggu = Boolean(
+    activeUser && activeUser.statusVerifikasi === "Menunggu" && currentRole !== "admin"
+  );
 
   // Shared relational states for functional workflows
   const [penggunaList, setPenggunaList] = useState<Pengguna[]>(() => [...INITIAL_PENGGUNA_LIST]);
@@ -162,6 +175,10 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
 
   const handleSupplierPasangPanen = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
+    if (isMenunggu) {
+      notify("⚠️ Akun Anda sedang Menunggu Verifikasi Admin. Pemasangan panen baru dibatasi.");
+      return;
+    }
     if (!panenNama.trim()) return;
     const nextId = produkList.reduce((max, p) => Math.max(max, p.id_produk), 2000) + 1;
     const created: Produk = {
@@ -218,6 +235,14 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
   // Setor limbah UMKM
   const handleUmkmSetorLimbah = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
+    if (isMenunggu) {
+      notify("⚠️ Akun Anda sedang Menunggu Verifikasi Admin. Pendaftaran batch limbah dibatasi.");
+      return;
+    }
+    if (!setorBerat || setorBerat <= 0) {
+      notify("⚠️ Berat batch limbah harus bernilai positif (minimal 1 kg)!");
+      return;
+    }
     const now = new Date().toISOString().replace("T", " ").slice(0, 19);
     const nextId = limbahList.reduce((max, l) => Math.max(max, l.id_limbah), 3000) + 1;
     const created: Limbah = {
@@ -645,6 +670,27 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
       </div>
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        {isMenunggu && (
+          <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:p-5 text-amber-950 shadow-sm flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white font-bold text-sm shadow-xs">
+              ⏳
+            </span>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                  Menunggu Verifikasi Admin
+                </span>
+                <h2 className="text-sm font-extrabold text-amber-950">
+                  Akun Menunggu Verifikasi Admin (Akses Operasional Dibatasi)
+                </h2>
+              </div>
+              <p className="mt-1 text-xs text-amber-900 leading-relaxed">
+                Akun Anda (<strong>{activeUser?.namaLengkap || profile.nama_lengkap}</strong>) saat ini berstatus <strong>Menunggu Verifikasi</strong> oleh Administrator SAMANGGA. Akses pengajuan operasional dan pengunggahan data dibatasi sementara hingga akun disetujui.
+              </p>
+            </div>
+          </div>
+        )}
+
         <section className="mb-8 rounded-3xl bg-gradient-to-br from-[#384A23] via-[#2D3B1C] to-[#1E2813] p-6 text-white shadow-md sm:p-8">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div>
@@ -952,8 +998,10 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
                 <form onSubmit={handleUmkmSetorLimbah} className="mt-4 space-y-3.5 text-xs">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-bold text-[#273419]">Jenis Limbah *</label>
+                      <label htmlFor="setorJenis" className="block font-bold text-[#273419]">Jenis Limbah *</label>
                       <select
+                        id="setorJenis"
+                        name="setorJenis"
                         value={setorJenis}
                         onChange={(e) => setSetorJenis(e.target.value as JenisLimbahErd)}
                         className="mt-1 h-10 w-full rounded-xl border border-gray-300 bg-white px-3"
@@ -964,13 +1012,18 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
                       </select>
                     </div>
                     <div>
-                      <label className="block font-bold text-[#273419]">Berat Batch (Kg) *</label>
+                      <label htmlFor="setorBerat" className="block font-bold text-[#273419]">Berat Batch (Kg) *</label>
                       <input
+                        id="setorBerat"
+                        name="setorBerat"
                         type="number"
                         required
                         min={1}
                         value={setorBerat}
-                        onChange={(e) => setSetorBerat(Number(e.target.value))}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setSetorBerat(val < 1 ? 1 : val);
+                        }}
                         className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
                       />
                     </div>
@@ -978,8 +1031,10 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-bold text-[#273419]">Skema Kompensasi *</label>
+                      <label htmlFor="setorKompensasi" className="block font-bold text-[#273419]">Skema Kompensasi *</label>
                       <select
+                        id="setorKompensasi"
+                        name="setorKompensasi"
                         value={setorKompensasi}
                         onChange={(e) => setSetorKompensasi(e.target.value as JenisKompensasi)}
                         className="mt-1 h-10 w-full rounded-xl border border-gray-300 bg-white px-3"
@@ -990,20 +1045,27 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
                       </select>
                     </div>
                     <div>
-                      <label className="block font-bold text-[#273419]">Estimasi Nilai (Rp)</label>
+                      <label htmlFor="setorEstimasi" className="block font-bold text-[#273419]">Estimasi Nilai (Rp)</label>
                       <input
+                        id="setorEstimasi"
+                        name="setorEstimasi"
                         type="number"
                         min={0}
                         value={setorEstimasi}
-                        onChange={(e) => setSetorEstimasi(Number(e.target.value))}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setSetorEstimasi(val < 0 ? 0 : val);
+                        }}
                         className="mt-1 h-10 w-full rounded-xl border border-gray-300 px-3"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block font-bold text-[#273419]">Lokasi Penjemputan *</label>
+                    <label htmlFor="setorLokasi" className="block font-bold text-[#273419]">Lokasi Penjemputan *</label>
                     <input
+                      id="setorLokasi"
+                      name="setorLokasi"
                       type="text"
                       required
                       value={setorLokasi}
@@ -1013,8 +1075,10 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
                   </div>
 
                   <div>
-                    <label className="block font-bold text-[#273419]">Titik Koordinat GPS</label>
+                    <label htmlFor="setorKoordinat" className="block font-bold text-[#273419]">Titik Koordinat GPS</label>
                     <input
+                      id="setorKoordinat"
+                      name="setorKoordinat"
                       type="text"
                       value={setorKoordinat}
                       onChange={(e) => setSetorKoordinat(e.target.value)}
@@ -1024,9 +1088,16 @@ export default function HalamanFungsiRole({ fixedRole }: HalamanFungsiRoleProps)
 
                   <button
                     type="submit"
-                    className="w-full rounded-xl bg-[#3D5126] py-3 text-xs font-bold text-white hover:bg-[#273419]"
+                    id="btn-setor-umkm"
+                    name="btn-setor-umkm"
+                    disabled={isMenunggu}
+                    className={`w-full rounded-xl py-3 text-xs font-bold text-white transition-all ${
+                      isMenunggu
+                        ? "bg-gray-400 cursor-not-allowed opacity-75"
+                        : "bg-[#3D5126] hover:bg-[#273419] shadow-sm active:scale-98"
+                    }`}
                   >
-                    + Daftarkan Batch Limbah ke Pasar Sirkular
+                    {isMenunggu ? "Akses Dibatasi: Akun Menunggu Verifikasi Admin" : "+ Daftarkan Batch Limbah ke Pasar Sirkular"}
                   </button>
                 </form>
               </div>
